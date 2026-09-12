@@ -1,0 +1,63 @@
+Fix the 2026-09-11 review findings; rebuild data from the checkpoints
+
+Glosses (rules, no model time; `make rebuild`):
+- enforce: drop "of or" before "belonging/pertaining/relating to" instead of
+  cutting the complement; a gloss may not end on a participle (555 rows)
+- clean: a lower-case final word with a period is prose, not a citation;
+  a count before a word is prose; L&S's name categories render as two
+  English phrasings (Roman family name, Roman surname)
+- cross-references: one resolver in common.py; `v.` inside `adv.`, `v. a.`
+  and one-letter targets are not references (19 rows read "first letter of
+  the Latin alphabet")
+- suspect: editorial-apparatus detector; fragment detector sees cut-off
+  participles; the function-word exemption no longer fires on "Tert. adv."
+  citations (1,616 entries) or derived-adverb notes; y-breve (U+045E) folds
+  to y (1,180 dictionary lines were mis-keyed)
+- grounding flag applied to hard/hard2/named rows too
+
+Package:
+- flagged (?) and detector-rejected rows are not shipped; a lemma whose
+  primary gloss is rejected is left to the app's own data (--keep-flagged
+  restores the old behaviour)
+- every -que/-ve particle row reads "conj enclitic"; the join runs over
+  hosts from every source, not only paradigms
+- paradigms built once (was twice)
+
+Paradigms (inflect.py):
+- abbreviated genitives joined by where they diverge (filii, hominis,
+  patris, libri, agri); 3rd-declension dative singular; "civis, is" and
+  "mare, is" decline; i-stem endings for i-stems and 3rd-declension
+  adjectives only; 2nd-declension nominatives only where the headword has
+  them; deponents on the right stem with passive-form endings; "deus, dei"
+  is not fifth declension; grammar abbreviations are not genitives
+- held out from the treebanks: exact 58.9% -> 61.5%, contradicted 2.0% ->
+  2.0%, corpus form coverage 73.6% -> 77.4%
+
+Pipeline:
+- common.checkpointed/load_ckpt: a failed call is not checkpointed and is
+  retried next run (was written as "ERROR: ..." / "" / null and skipped
+  forever); judge and shorten/adapt records carry their input gloss
+- common.parse_score reads the digit from the start of the reply
+- lsgloss.py --offline / --carry rebuild the TSV from the checkpoint;
+  adapt is off by default; prompt id covers every prompt; manifest records
+  the XML hash
+- score.py: no newline or tab inside a TSV field; --offline
+- verify.py: reverts the source column with the gloss; judges cross-
+  references against their target
+- lemmatize.py: accepts a suppletive the entry's headword line cites;
+  --offline
+- freqfix.py: a judge failure (-1) is not a low score
+- eval/treebank.py: one treebank reader and one `compatible` for morphacc,
+  quality and diffck
+- Makefile finds data-sources/ beside or inside the checkout; rebuild,
+  lemmas-offline targets; checkpoint.sh has no hard-coded path
+
+Tests: 254 (3 expected failures); tests/test_fixes.py pins every fix;
+package tests read the repo's own out/ first. Regression baseline accepted
+(changelog 15, 16); make check is green.
+
+Data: out/ls_glosses.tsv (1,047 glosses changed, 15 flags), out/lemma_map.tsv,
+out/scores_full.tsv (6 broken lines repaired), out/lewis-short-glosses.zip.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_019VsPT17SMj2zp9PUSBXe31

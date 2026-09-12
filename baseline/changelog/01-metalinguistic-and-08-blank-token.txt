@@ -1,0 +1,28 @@
+NOTE: detector_rows/tokens.word-class rising is the detector's SCOPE widening
+to a pre-existing class (10 new rows), not a data regression.
+
+characterising 51,643 entries over 8 probes
+
+  clean      unchanged (4,852 rows)
+  enforce    unchanged (7,926 rows)
+  suspect    CHANGED  +10 -0 ~0  (baseline 1,035 -> 1,045)
+      + cujus1: word-class
+      + eho: word-class
+      + et: word-class
+      + nam: word-class
+      + ni: word-class
+      + nonne: word-class
+      + phy: word-class
+      + quidem: word-class
+      + seu: word-class
+      + vester: word-class
+  xref       unchanged (7,756 rows)
+  stem       unchanged (22,360 rows)
+  forms      unchanged (51,643 rows)
+  lemmafreq  unchanged (29,002 rows)
+  norm       unchanged (51,643 rows)
+
+  metrics    WORSE detector_rows.word-class: 7 -> 17
+  metrics    WORSE detector_tokens.word-class: 97 -> 223,056 (0.001% -> 3.241% of corpus)
+
+12 differences from baseline. If they are all intended, re-run with --accept.

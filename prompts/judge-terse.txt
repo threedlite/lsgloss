@@ -1,0 +1,3 @@
+Rate how well the gloss states the entry's main meaning. Reply with ONE DIGIT only.
+5=exact 4=close 3=secondary sense 2=misleading 1=wrong 0=not a meaning (names a word class, or repeats the Latin).
+If a second entry is shown as the one it cross-references, judge against that entry.

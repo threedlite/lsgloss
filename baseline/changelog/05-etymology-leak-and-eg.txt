@@ -1,0 +1,36 @@
+NOTE: detector_rows.etymology-leak 0 -> 334 is a NEW detector finding a
+pre-existing class, not a regression. Same for detector_tokens.etymology-leak.
+
+characterising 51,643 entries over 8 probes
+
+  clean      CHANGED  +9 -0 ~0  (baseline 4,843 -> 4,852)
+      + adapt:11431: Roman name, e.g	->	Roman name
+      + adapt:4601: Roman name, e.g. Aurelius	->	Roman name
+      + main:27843: roman proper name, e.g	->	roman proper name
+      + main:31581: nymph-born, e.g. Achilles	->	nymph-born
+      + main:37120: servant, e.g. marcipor, lucipor	->	servant
+      + name:49484: means of disturbance, e.g	->	means of disturbance
+      + name:51082: Roman family name, e.g	->	Roman family name
+      + repair:28716: Roman surname, e.g. consul	->	Roman surname
+      + ... and 1 more
+  enforce    unchanged (7,926 rows)
+  suspect    CHANGED  +334 -0 ~0  (baseline 701 -> 1,035)
+      + Achilleis: etymology-leak
+      + Aemilianus: etymology-leak
+      + Antiochenus2: etymology-leak
+      + Augusteus: etymology-leak
+      + Augustinus1: etymology-leak
+      + Cerealitas: etymology-leak
+      + Cistellaria: etymology-leak
+      + Cunina: etymology-leak
+      + ... and 326 more
+  xref       unchanged (7,756 rows)
+  stem       unchanged (22,360 rows)
+  forms      unchanged (51,643 rows)
+  lemmafreq  unchanged (29,002 rows)
+  norm       unchanged (51,643 rows)
+
+  metrics    WORSE detector_rows.etymology-leak: 0 -> 334
+  metrics    WORSE detector_tokens.etymology-leak: 0 -> 2,630 (0.000% -> 0.038% of corpus)
+
+345 differences from baseline. If they are all intended, re-run with --accept.

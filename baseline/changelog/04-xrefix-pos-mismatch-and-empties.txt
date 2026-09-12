@@ -1,0 +1,22 @@
+inputs:
+  xml   /Users/user1/glimmer/data-sources/lexica/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml
+  tsv   /Users/user1/glimmer/lsgloss/out/ls_glosses.tsv
+  freq  /Users/user1/glimmer/lsgloss/out/latin_freq.tsv
+  ckpt  /Users/user1/glimmer/out/ckpt.jsonl
+
+characterising 51,643 entries over 8 probes
+
+  clean      unchanged (4,852 rows)
+  enforce    unchanged (7,926 rows)
+  suspect    unchanged (1,087 rows)
+  xref       unchanged (7,756 rows)
+  stem       unchanged (22,360 rows)
+  forms      unchanged (51,643 rows)
+  lemmafreq  unchanged (29,002 rows)
+  norm       unchanged (51,643 rows)
+
+  metrics    better detector_rows.empty: 878 -> 815
+  metrics    better detector_tokens.empty: 117,034 -> 99,578 (1.703% -> 1.449% of corpus)
+  metrics    better glossed_rows: 50,765 -> 50,828
+
+no change from baseline.

@@ -1,0 +1,84 @@
+inputs:
+  xml   /Users/user1/glimmer/lsgloss/../data-sources/lexica/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml
+  tsv   /Users/user1/glimmer/lsgloss/out/ls_glosses.tsv
+  freq  /Users/user1/glimmer/lsgloss/out/latin_freq.tsv
+  ckpt  /Users/user1/glimmer/out/ckpt.jsonl
+
+characterising 51,643 entries over 8 probes
+
+  clean      unchanged (4,852 rows)
+  enforce    unchanged (7,926 rows)
+  suspect    unchanged (1,088 rows)
+  xref       unchanged (7,756 rows)
+  stem       CHANGED  +495 -0 ~79  (baseline 22,360 -> 22,855)
+      + Adrastis: idis	adrastid	is
+      + Adrastus: i	adrast	i
+      + Adria: adriacus	adriac	us
+      + Aegaeon: onis	aegaeon	is
+      + Aesculapium: i	aesculapi	i
+      + Allobrox: agis	allobrag	is
+      + Anacreon: ontis	anacreont	is
+      + Anigros: i	anigros	i
+      + ... and 487 more
+      ~ Adoneus1: ei	adoneus	i  =>  ei	adone	i
+      ~ Bassareus: ei	bassareus	i  =>  ei	bassare	i
+      ~ Celeus: ei	celeus	i  =>  ei	cele	i
+      ~ Cisseus: ei	cisseus	i  =>  ei	cisse	i
+      ~ Dorceus: ei	dorceus	i  =>  ei	dorce	i
+      ~ Eleleus: ei	eleleus	i  =>  ei	elele	i
+      ~ Epimetheus: ei	epimetheus	i  =>  ei	epimethe	i
+      ~ Eubuleus: ei	eubuleus	i  =>  ei	eubule	i
+      ~ ... and 71 more
+  forms      CHANGED  +0 -0 ~32817  (baseline 51,643 -> 51,643)
+      ~ Abantius: 1	b23b19a28a9d29fa  =>  13	5b7de28cdb060f32
+      ~ Abaris: 9	6e4f16a4a4d9aaee  =>  8	267f3589792f547a
+      ~ Abaritanus: 1	0227d53190894735  =>  13	b7e0c5bea2498eeb
+      ~ Abas: 9	3349ecb27f1ac37c  =>  8	f1317544cc9f3bdf
+      ~ Abatos: 29	b9c36bfdae6dd242  =>  10	7d1c3ddb92c29f56
+      ~ Abba1: 6	830718008ae607f2  =>  1	7dda11dcb285be6b
+      ~ Abdalonymus: 26	d71fad580e231a13  =>  1	1f787c6ad63778d8
+      ~ Abellinum: 9	f3897fe48a626c6d  =>  6	4d010980ec20ca6c
+      ~ ... and 32809 more
+  lemmafreq  CHANGED  +4595 -294 ~9592  (baseline 29,002 -> 33,303)
+      + Abantius: 1
+      + Abaritanus: 1
+      + Achivus: 77
+      + Acraeus: 4
+      + Acrisioneus: 3
+      + Acrocorinthus: 8
+      + Adrasteus: 2
+      + Aeacideius: 1
+      + ... and 4587 more
+      - Acamas: 3
+      - Aegipan: 3
+      - Aesacus: 1
+      - Androgeon: 1
+      - Arethon: 2
+      - Artemita: 3
+      - Attalis: 2
+      - Avenio: 7
+      - ... and 286 more
+      ~ Abba1: 40  =>  5
+      ~ Acanthius: 1  =>  5
+      ~ Acarnan: 91  =>  87
+      ~ Accianus: 1  =>  3
+      ~ Acesinus: 2  =>  4
+      ~ Acesta: 9  =>  1
+      ~ Achaemenius: 1  =>  17
+      ~ Achaeus2: 3  =>  445
+      ~ ... and 9584 more
+  norm       unchanged (51,643 rows)
+
+  metrics    (scale) attributed_tokens: 5,907,727 -> 9,257,696
+  metrics    WORSE detector_tokens.bare-echo: 1,726 -> 1,846 (0.025% -> 0.027% of corpus)
+  metrics    WORSE detector_tokens.empty: 99,578 -> 112,988 (1.449% -> 1.644% of corpus)
+  metrics    WORSE detector_tokens.etymology-leak: 2,630 -> 3,975 (0.038% -> 0.058% of corpus)
+  metrics    better detector_tokens.fragment: 1,781 -> 1,783 (0.026% -> 0.026% of corpus)
+  metrics    WORSE detector_tokens.head-echo: 15,067 -> 15,259 (0.219% -> 0.222% of corpus)
+  metrics    WORSE detector_tokens.latin-chars: 1,142 -> 1,728 (0.017% -> 0.025% of corpus)
+  metrics    WORSE detector_tokens.ungrounded: 36,990 -> 57,343 (0.538% -> 0.834% of corpus)
+  metrics    WORSE detector_tokens.word-class: 36,847 -> 36,880 (0.536% -> 0.537% of corpus)
+  metrics    better form_coverage_pct: 61.219 -> 73.604
+  metrics    better form_coverage_tokens: 4,207,835 -> 5,059,140
+
+47,879 differences from baseline. If they are all intended, re-run with --accept.

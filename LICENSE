@@ -1,0 +1,145 @@
+MIT License
+
+Copyright (c) 2026 threedlite
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-------------------------------------------------------------------------------
+ATTRIBUTION / THIRD-PARTY MATERIAL
+
+SCOPE. The MIT licence above applies to the CODE in this repository and to
+nothing else. Dictionary text is never MIT. Specifically:
+
+  MIT (code)
+    lsgloss.py, clean_gloss.py, ground.py, suspect.py, qa_report.py,
+    score.py, consensus.py, refine.py, verify.py, eval/run_eval.py,
+    eval/xref.py, Makefile, requirements.txt, and the prose of README.md
+
+  CC BY-SA 4.0 (derived from the dictionary -- see section 1 below)
+    eval/gold.tsv          25 reference glosses written from Lewis & Short
+    overrides.tsv          gloss corrections quoted from Lewis & Short
+    out/*.tsv              all generated output, including scores, consensus,
+                           and the corpus frequency list (see 1c)
+    the example glosses quoted in README.md
+
+  prompts/*.txt are original instructions written for this project (MIT), but
+  they quote a handful of dictionary words as examples.
+
+Anything not listed as MIT above is derivative of the Perseus text and inherits
+CC BY-SA 4.0. The model weights and the inference engine are covered by their
+own licences (sections 2 and 3); none of these third-party materials are
+redistributed here -- each is fetched by the setup steps in README.md.
+
+1. THE DICTIONARY  (source of all glosses in this project)
+
+   Charlton T. Lewis and Charles Short,
+   "A Latin Dictionary: Founded on Andrews' edition of Freund's Latin dictionary"
+   Oxford: Clarendon Press, 1879.
+
+   Machine-readable text prepared by the Perseus Project, Tufts University,
+   under the direction of Gregory Crane, with funding from the National
+   Endowment for the Humanities. Copyright Trustees of Tufts University,
+   Medford, MA. First released 1997-10-28.
+
+   File used: CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml
+   Source:    https://github.com/PerseusDL/lexica
+   Licence:   Creative Commons Attribution-ShareAlike 4.0 International
+              https://creativecommons.org/licenses/by-sa/4.0/
+
+   CHANGES MADE TO THE LICENSED MATERIAL (required by CC BY-SA section 3.a.1.B):
+   entry text was programmatically condensed into short English glosses of
+   roughly one to five words using a language model; cross-reference entries
+   were resolved to the gloss of their target entry; bibliographic citations
+   were removed from the resulting glosses. No dictionary text is reproduced in
+   full. The glosses are a derivative work of the Perseus text.
+
+   BECAUSE CC BY-SA IS COPYLEFT, the generated glosses are NOT covered by the
+   MIT licence above. Anyone redistributing them must credit Lewis, Short, and
+   the Perseus Digital Library as set out here, state that changes were made,
+   and license the result under CC BY-SA 4.0 International.
+
+1b. THE TREEBANKS  (source of gold form/lemma pairs in morphology.csv)
+
+   Perseus Ancient Greek and Latin Dependency Treebanks
+   Source:  https://github.com/PerseusDL/treebank_data
+   Licence: Creative Commons Attribution-ShareAlike
+            https://creativecommons.org/licenses/by-sa/3.0/us/
+
+   The Latin treebanks supply human-verified form/lemma pairs, used at the
+   highest confidence in morphology.csv. They generalise beyond the annotated
+   works -- "cui" is a form of qui in any text -- so they improve lookup for the
+   untreebanked works this project exists to serve.
+
+   Being CC BY-SA, they carry the same copyleft as the dictionary text, so the
+   generated package remains CC BY-SA 4.0 and must credit Perseus for both.
+
+1c. THE CORPUS  (source of out/latin_freq.tsv)
+
+   Perseus canonical-latinLit
+   Source:  https://github.com/PerseusDL/canonical-latinLit
+   Licence: Creative Commons Attribution-ShareAlike 3.0 United States
+            https://creativecommons.org/licenses/by-sa/3.0/us/
+
+   428 Latin editions, ~6.87M running tokens. Used only to count how often each
+   word form occurs; no corpus text is reproduced here or in the package. The
+   resulting frequency list (out/latin_freq.tsv, built by corpusfreq.py) decides
+   which sense a reader is shown for an ambiguous form, and weights every
+   quality figure in the README by how often a word is actually met.
+
+   A word-frequency table is a set of facts about a text rather than an
+   expressive excerpt of it, but the corpus is CC BY-SA and the derived list is
+   distributed here under the same terms regardless, alongside the same
+   attribution as the dictionary and treebanks.
+
+2. THE MODELS
+
+   Three open-weight models are used, in sequential passes. None is
+   redistributed here; each is downloaded by the setup steps in README.md.
+
+   a. openai/gpt-oss-20b                          -- glossing
+      https://huggingface.co/openai/gpt-oss-20b
+      Apache License 2.0
+      Weights are used as published (MXFP4); this project converts them to
+      GGUF locally with llama.cpp's converter, which repacks rather than
+      requantises. No modified weights are distributed.
+
+   b. google/gemma-4-31B-it-qat-q4_0-gguf         -- independent judging
+      https://huggingface.co/google/gemma-4-31B-it-qat-q4_0-gguf
+      The model repository carries an `apache-2.0` tag, but its license_link
+      points to Google's Gemma-specific terms:
+          https://ai.google.dev/gemma/docs/gemma_4_license
+      These are not the same licence. Anyone redistributing this pipeline's
+      output, or using it commercially, should read Google's Gemma terms
+      directly rather than relying on the repository tag -- the Gemma terms
+      carry a prohibited-use policy that Apache 2.0 does not.
+
+      Note on scope: Gemma is used here only to SCORE candidate glosses, i.e.
+      to emit a digit 0-5. It does not author any gloss text in the released
+      dataset. Rows it caused to be repaired were rewritten by gpt-oss.
+
+   c. meta-models/Muse-Glimmer-30B-GGUF           -- hard-case adjudication
+      https://huggingface.co/meta-models/Muse-Glimmer-30B-GGUF
+      Apache License 2.0
+      First-party GGUF published by Meta; no third-party requantisation.
+
+3. THE INFERENCE ENGINE
+
+   llama.cpp, Copyright (c) 2023-2024 The ggml authors
+   Source:  https://github.com/ggml-org/llama.cpp
+   Licence: MIT

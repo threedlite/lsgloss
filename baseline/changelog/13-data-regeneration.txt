@@ -1,0 +1,31 @@
+inputs:
+  xml   /Users/user1/glimmer/data-sources/lexica/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml
+  tsv   /Users/user1/glimmer/lsgloss/out/ls_glosses.tsv
+  freq  /Users/user1/glimmer/lsgloss/out/latin_freq.tsv
+  ckpt  /Users/user1/glimmer/out/ckpt.jsonl
+
+characterising 51,643 entries over 8 probes
+
+  clean      unchanged (4,852 rows)
+  enforce    unchanged (7,926 rows)
+  suspect    CHANGED  +2 -2 ~0  (baseline 1,087 -> 1,087)
+      + por: ungrounded
+      + ve2: bare-echo
+      - eho: word-class
+      - et: word-class
+  xref       unchanged (7,756 rows)
+  stem       unchanged (22,360 rows)
+  forms      unchanged (51,643 rows)
+  lemmafreq  unchanged (29,002 rows)
+  norm       unchanged (51,643 rows)
+
+  metrics    (scale) corpus_tokens: 6,882,930 -> 6,873,450
+  metrics    WORSE detector_rows.bare-echo: 34 -> 35
+  metrics    WORSE detector_rows.ungrounded: 492 -> 493
+  metrics    better detector_rows.word-class: 17 -> 15
+  metrics    WORSE detector_tokens.bare-echo: 1,665 -> 1,726 (0.024% -> 0.025% of corpus)
+  metrics    WORSE detector_tokens.ungrounded: 47,604 -> 47,609 (0.692% -> 0.693% of corpus)
+  metrics    better detector_tokens.word-class: 223,056 -> 33,480 (3.241% -> 0.487% of corpus)
+  metrics    better form_coverage_pct: 61.134 -> 61.219
+
+8 differences from baseline. If they are all intended, re-run with --accept.

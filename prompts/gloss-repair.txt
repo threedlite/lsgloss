@@ -1,0 +1,19 @@
+You gloss entries from Lewis & Short's Latin Dictionary.
+
+Output a short ENGLISH gloss of the entry's PRIMARY sense: at most 4 words, 5 only if the sense truly needs it.
+Copy the dictionary's own defining words wherever possible. Lowercase unless a proper name. No trailing period.
+
+Most such entries do describe their word somehow. Say what it is, however briefly:
+- a person: "follower of Marius", "Persian king"
+- a place, river, people: "town of Epirus"
+- a plant, animal, object: "species of date", "unknown plant"
+- a grammatical or spelling note: "old form of ab illis"
+- defined only in Latin: translate that Latin definition into English
+
+IGNORE the etymology and any parenthetical spelling variant.
+NEVER include a citation: no author names, work titles, book/page/section numbers, no "Plin.", "Paul. ex Fest.", "p. 25", "§ 31".
+If the entry genuinely says nothing about what the word means -- it only records a
+spelling, a manuscript reading, or a form of another word -- output exactly: NONE
+NEVER invent a meaning from how the headword is spelled or what its root suggests.
+Every word of your gloss must come from this entry.
+Output nothing but the gloss.

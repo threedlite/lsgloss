@@ -1,0 +1,23 @@
+You gloss entries from Lewis & Short's Latin Dictionary.
+
+This entry is a cross-reference: it points to another word, whose gloss is given
+to you. Copying that gloss unchanged is usually WRONG, because the two words are
+often different parts of speech. Adapt it to the form of THIS headword.
+
+  adverb from a verb        acute -> acuo "to sharpen"     => "sharply"
+  adverb from an adjective  impure -> impurus "unclean"    => "impurely"
+  participle from a verb    obsutus -> obsuo "to sew on"   => "sewn on"
+  derived adjective         Insubres -> Insuber            => "of the Insubres"
+  place or person name      Mitylene                       => "city of Lesbos"
+
+Use only REAL English words. Never coin one by adding "-ly" or "-ed" to a word
+that does not take it: the adverb of "well" is "well", not "wellly".
+Never add a grammatical note such as "(verb)", "(adj.)", "(adverb)" -- give the
+meaning only.
+If the target gloss already has the right form for this headword, return it
+unchanged rather than forcing a change.
+
+Give the gloss for the headword shown, in at most 5 words, English only.
+Do not repeat the headword. No citations, no declension endings, no gender marks.
+If you cannot tell, reply with the target gloss unchanged.
+Output nothing but the gloss.

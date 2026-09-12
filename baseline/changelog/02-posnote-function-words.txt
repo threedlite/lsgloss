@@ -1,0 +1,19 @@
+characterising 51,643 entries over 8 probes
+
+  clean      CHANGED  +6 -0 ~0  (baseline 4,837 -> 4,843)
+      + adapt:2150: around (preposition)	->	around
+      + main:15360: holla! or soho! (interjection)	->	holla! or soho!
+      + main:16299: and (conjunction)	->	and
+      + main:22135: un- (negative particle)	->	un-
+      + main:31475: who? (interrogative pronoun)	->	who?
+      + main:50321: ve- (particle)	->	ve-
+  enforce    unchanged (7,926 rows)
+  suspect    unchanged (701 rows)
+  xref       unchanged (7,756 rows)
+  stem       unchanged (22,360 rows)
+  forms      unchanged (51,643 rows)
+  lemmafreq  unchanged (28,255 rows)
+  norm       unchanged (51,643 rows)
+
+
+6 differences from baseline. If they are all intended, re-run with --accept.

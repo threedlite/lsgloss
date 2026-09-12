@@ -1,0 +1,29 @@
+inputs:
+  xml   /Users/user1/glimmer/data-sources/lexica/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml
+  tsv   /Users/user1/glimmer/lsgloss/out/ls_glosses.tsv
+  freq  /Users/user1/glimmer/lsgloss/out/latin_freq.tsv
+  ckpt  /Users/user1/glimmer/out/ckpt.jsonl
+
+characterising 51,643 entries over 8 probes
+
+  clean      unchanged (4,852 rows)
+  enforce    unchanged (7,926 rows)
+  suspect    CHANGED  +3 -2 ~0  (baseline 1,087 -> 1,088)
+      + fertus: ungrounded
+      + sive: word-class
+      + suus: word-class
+      - ego: ungrounded
+      - ex: fragment
+  xref       unchanged (7,756 rows)
+  stem       unchanged (22,360 rows)
+  forms      unchanged (51,643 rows)
+  lemmafreq  unchanged (29,002 rows)
+  norm       unchanged (51,643 rows)
+
+  metrics    better detector_rows.fragment: 5 -> 4
+  metrics    WORSE detector_rows.word-class: 15 -> 17
+  metrics    better detector_tokens.fragment: 34,728 -> 1,781 (0.505% -> 0.026% of corpus)
+  metrics    better detector_tokens.ungrounded: 47,609 -> 36,990 (0.693% -> 0.538% of corpus)
+  metrics    WORSE detector_tokens.word-class: 33,480 -> 36,847 (0.487% -> 0.536% of corpus)
+
+7 differences from baseline. If they are all intended, re-run with --accept.

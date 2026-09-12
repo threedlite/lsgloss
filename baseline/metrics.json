@@ -1,0 +1,32 @@
+{
+  "attributed_tokens": 9601076,
+  "corpus_tokens": 6873450,
+  "detector_rows": {
+    "adv-inherits-verb": 29,
+    "bare-echo": 53,
+    "editorial-apparatus": 8,
+    "empty": 924,
+    "etymology-leak": 334,
+    "fragment": 23,
+    "head-echo": 58,
+    "latin-chars": 158,
+    "ungrounded": 499,
+    "word-class": 17
+  },
+  "detector_tokens": {
+    "adv-inherits-verb": 1074,
+    "bare-echo": 1921,
+    "editorial-apparatus": 284,
+    "empty": 162146,
+    "etymology-leak": 4439,
+    "fragment": 3856,
+    "head-echo": 14265,
+    "latin-chars": 1882,
+    "ungrounded": 57971,
+    "word-class": 36891
+  },
+  "form_coverage_pct": 77.406,
+  "form_coverage_tokens": 5320444,
+  "glossed_rows": 50719,
+  "rows": 51643
+}

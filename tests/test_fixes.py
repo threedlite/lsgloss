@@ -1,0 +1,289 @@
+"""Executable specs for the 2026-09-12 review fixes.
+
+Each test names the defect it pins. They are the guard against any of these
+coming back; the corpus-wide diff in regress.py is the guard against their
+fixes touching anything else.
+"""
+import json, subprocess, sys, tempfile, unittest
+from pathlib import Path
+
+from tests.util import ROOT
+from tests.fakemodel import FakeModel
+from clean_gloss import clean, enforce
+from suspect import reasons, function_entry
+from inflect import forms_with_morph, _noun_stem_and_key, render_morph, parse_reading, SLOT_ORDER
+from common import (parse_score, xref_target_word, XrefIndex, checkpointed, load_ckpt,
+                    pos_marker, focus)
+
+FIX = Path(__file__).resolve().parent / 'fixtures'
+
+
+class TestCleanTrailingPeriod(unittest.TestCase):
+    """ABBR read any short word with a trailing period as a citation."""
+
+    def test_a_lowercase_final_word_with_a_period_is_kept(self):
+        self.assertEqual(clean('wild wolf.'), 'wild wolf')
+        self.assertEqual(clean('wolf.'), 'wolf')
+        self.assertEqual(clean('to sew on.'), 'to sew on')
+
+    def test_an_author_abbreviation_is_still_cut(self):
+        self.assertEqual(clean('eagle, Plin.'), 'eagle')
+        self.assertEqual(clean('accent, Gell. 13, 6'), 'accent')
+
+    def test_a_lowercase_citation_abbreviation_is_still_cut(self):
+        self.assertEqual(clean('shield, id.'), 'shield')
+        self.assertEqual(clean('law t. t. lawsuit'), 'law')
+
+    def test_a_count_followed_by_a_word_is_prose(self):
+        self.assertEqual(clean('one of 12 lictors'), 'one of 12 lictors')
+        self.assertEqual(clean('raven-black color, Vitr. 8, 3'), 'raven-black color')
+
+
+class TestEnforceKeepsTheComplement(unittest.TestCase):
+    """'of or belonging to a deity' shipped as 'of or belonging' on 555 rows."""
+
+    CASES = {'of or belonging to a deity': 'belonging to a deity',
+             'of or pertaining to the sea': 'pertaining to the sea',
+             'of or belonging to a wild boar': 'belonging to a wild boar'}
+
+    def test_drops_of_or_before_the_participle(self):
+        for src, want in self.CASES.items():
+            with self.subTest(src):
+                self.assertEqual(enforce(src, 5), want)
+
+    def test_never_ends_on_a_bare_participle(self):
+        for g in ('of or belonging to Mentesa in Hispania Baetica',
+                  'of or relating to interest or usury and money'):
+            with self.subTest(g):
+                self.assertNotIn(enforce(g, 5).split()[-1], ('belonging', 'pertaining', 'relating', 'to'))
+
+    def test_is_idempotent_and_capped(self):
+        for src in self.CASES:
+            e = enforce(src, 5)
+            self.assertEqual(enforce(e, 5), e)
+            self.assertLessEqual(len(e.split()), 5)
+
+    def test_the_fragment_detector_now_sees_the_bare_participle(self):
+        self.assertIn('fragment', reasons('divinus', 'of or belonging', 'model~',
+                                          'divinus, a, um, adj. of or belonging to a deity'))
+        # ...even on an entry the function-word exemption covers
+        self.assertIn('fragment', reasons('trecenarius', 'of or belonging', 'model',
+                                          'trecenarius, a, um, adj. num. of or belonging to three hundred'))
+        self.assertNotIn('fragment', reasons('ex', 'out of, from', 'model',
+                                             'ex, praep. with abl. out of, from'))
+
+
+class TestYBreveFolding(unittest.TestCase):
+    """Perseus writes y-breve as Cyrillic U+045E; it folded to nothing."""
+
+    def test_y_breve_is_a_y(self):
+        from common import fold, letters, plain
+        self.assertEqual(fold('Cărўae'), 'caryae')
+        self.assertEqual(letters('Bacchўlĭdēs'), 'bacchylides')
+        self.assertEqual(plain('Cărўae'), 'caryae')
+
+    def test_a_headword_echoed_through_a_y_breve_is_caught(self):
+        self.assertIn('bare-echo', reasons('Bacchўlĭdēs', 'Bacchylides', 'repaired',
+                                           'Bacchylides, is, m., a Greek lyric poet'))
+
+
+class TestNameGlossRendering(unittest.TestCase):
+    """'Roman nomen' is half Latin; six phrasings of one category read as six."""
+
+    def test_one_english_rendering_per_category(self):
+        self.assertEqual(clean('Roman nomen'), 'Roman family name')
+        self.assertEqual(clean('Roman gens name'), 'Roman family name')
+        self.assertEqual(clean('name of a Roman gens'), 'Roman family name')
+        self.assertEqual(clean('Roman cognomen in gens Fabia'), 'Roman surname in gens Fabia')
+
+    def test_a_surname_stays_a_surname(self):
+        self.assertEqual(clean('Roman surname'), 'Roman surname')
+
+
+class TestEditorialApparatus(unittest.TestCase):
+    ENTRY = 'abathon, a false reading in Vitr. 5, 6'
+
+    def test_flags_false_reading(self):
+        self.assertIn('editorial-apparatus', reasons('abathon', 'false reading in Vitruvius', 'hard', self.ENTRY))
+        self.assertIn('editorial-apparatus', reasons('luteae', 'false reading for uvam', 'repaired', self.ENTRY))
+
+    def test_does_not_flag_prose_about_reading(self):
+        self.assertNotIn('editorial-apparatus', reasons('lectio', 'reading, perusal', 'model',
+                                                        'lectio, onis, f. a reading'))
+
+
+class TestFunctionEntryWindow(unittest.TestCase):
+    """'Tert. adv. Marc.' exempted 1,616 noun and adjective entries."""
+
+    def test_a_cited_adversus_is_not_a_marker(self):
+        f = focus('acatus, i, f., a light vessel or boat, Tert. adv. Marc. 5, 1 med.')
+        self.assertFalse(function_entry(f))
+
+    def test_the_headword_marker_still_counts(self):
+        self.assertTrue(function_entry(focus('ab, praep. with abl. from, away from')))
+        self.assertTrue(function_entry(focus('abhinc, temp. adv. of past time, ago')))
+
+    def test_a_derived_adverb_note_is_not_a_marker(self):
+        f = focus('actualis, e, adj. id., active, practical, Macr. Somn. Scip. 2, 17.—Adv.: actualiter')
+        self.assertFalse(function_entry(f))
+
+
+class TestJudgeScoreParsing(unittest.TestCase):
+    def test_reads_the_leading_digit(self):
+        self.assertEqual(parse_score('4 accurate but thin'), 4)
+        self.assertEqual(parse_score('(3) secondary sense'), 3)
+
+    def test_does_not_take_a_number_from_prose(self):
+        # '\\b([0-5])\\b' scored this 3
+        self.assertIsNone(parse_score('The gloss has 3 words and I would rate it 4'))
+
+    def test_unparseable_is_none_not_a_score(self):
+        self.assertIsNone(parse_score(''))
+        self.assertIsNone(parse_score('cannot judge'))
+
+
+class TestCrossReferenceTarget(unittest.TestCase):
+    def test_v_inside_adv_is_not_a_reference(self):
+        # resolved to the entry `comp` before
+        self.assertIsNone(xref_target_word('Adv. comp., abditius'))
+
+    def test_verb_marker_is_not_a_reference(self):
+        # "v. a." resolved to the entry a2, "first letter of the Latin alphabet"
+        self.assertEqual(xref_target_word('x, v. a., v. abicio')[1], 'abicio')
+        self.assertIsNone(xref_target_word('abbrevio, are, v. freq. a., to shorten'))
+
+    def test_one_letter_target_is_not_a_reference(self):
+        # "v. h. v." is vide hoc verbum
+        self.assertIsNone(xref_target_word('patalis, false reading of patulus, v. h. v.'))
+
+    def test_homograph_number_is_honoured(self):
+        rows = [['repens1', 'repens', 'creeping', 'model'], ['repens2', 'repens', 'sudden', 'model'],
+                ['x', 'x', '', 'xref']]
+        bodies = ['repens, creeping', 'repens, sudden', 'x, v. 2. repens']
+        self.assertEqual(XrefIndex(rows, bodies).target_of(2), 1)
+
+
+class TestPosMarker(unittest.TestCase):
+    def test_reads_the_headword_line(self):
+        self.assertEqual(pos_marker('vero, adv., v. verus'), 'adv')
+        self.assertEqual(pos_marker('pater, tris, m. father'), None)
+
+
+class TestCheckpointRetriesFailures(unittest.TestCase):
+    """A failed call was written as 'ERROR: ...' and skipped forever on resume."""
+
+    def test_a_failure_is_not_written_and_a_success_is(self):
+        with tempfile.TemporaryDirectory() as d:
+            ck = Path(d) / 'c.jsonl'
+            work = lambda i: None if i == 2 else {'i': i, 'g': f'g{i}'}
+            got = checkpointed(str(ck), [1, 2, 3], work, jobs=2, tag='t', extra={'p': 'main'},
+                               log=lambda s: None)
+            self.assertEqual(sorted(r['i'] for r in got), [1, 3])
+            done = load_ckpt(str(ck), 'main')
+            self.assertEqual(sorted(done), [1, 3])
+            self.assertEqual(done[1]['g'], 'g1')
+
+
+class TestParadigmStems(unittest.TestCase):
+    """Abbreviated genitives were glued on wrongly: filiusi, hoinem, pattrem."""
+
+    def test_second_declension_ii(self):
+        self.assertEqual(_noun_stem_and_key('filius', 'ii'), ('fili', 'i'))
+        f = forms_with_morph('filius', 'filius, ii, m. a son')
+        self.assertIn('filii', f); self.assertIn('filio', f); self.assertNotIn('filiusi', f)
+
+    def test_third_declension_abbreviations(self):
+        self.assertEqual(_noun_stem_and_key('homo', 'inis'), ('homin', 'is'))
+        self.assertEqual(_noun_stem_and_key('pater', 'tris'), ('patr', 'is'))
+        self.assertEqual(_noun_stem_and_key('corpus', 'oris'), ('corpor', 'is'))
+        self.assertEqual(_noun_stem_and_key('liber', 'bri'), ('libr', 'i'))
+        self.assertEqual(_noun_stem_and_key('ager', 'gri'), ('agr', 'i'))
+
+    def test_compound_guard_still_holds(self):
+        f = forms_with_morph('vigintivir', 'vigintivir, viri, m. one of a board of twenty')
+        self.assertNotIn('uirum', f); self.assertIn('uigintiuiri', f)
+
+    def test_third_declension_dative_singular(self):
+        self.assertEqual(forms_with_morph('rex', 'rex, regis, m. a king')['regi'], 'dat s m')
+        self.assertIn('homini', forms_with_morph('homo', 'homo, inis, m. a man'))
+
+    def test_i_stem_genitive_plural_only_for_i_stems(self):
+        self.assertNotIn('regium', forms_with_morph('rex', 'rex, regis, m. a king'))
+        self.assertIn('urbium', forms_with_morph('urbs', 'urbis, f. a city'.join(['urbs, ', ''])))
+        self.assertIn('ciuium', forms_with_morph('civis', 'civis, is, m. a citizen'))
+
+    def test_bare_is_genitive_declines(self):
+        m = forms_with_morph('mare', 'mare, is, n. the sea')
+        self.assertEqual(m['maria'], 'acc p n|nom p n|voc p n')
+        self.assertIn('mari', m)
+
+    def test_nominative_endings_only_where_the_headword_has_them(self):
+        self.assertNotIn('agrer', forms_with_morph('ager', 'ager, gri, m. a field'))
+        self.assertNotIn('populer', forms_with_morph('populus', 'populus, i, m. a people'))
+        self.assertNotIn('puere', forms_with_morph('puer', 'puer, eri, m. a boy'))
+        self.assertIn('serue', forms_with_morph('servus', 'servus, i, m. a slave'))
+
+    def test_deus_is_not_fifth_declension(self):
+        f = forms_with_morph('deus', 'deus, dei, m. a god')
+        self.assertIn('deo', f); self.assertNotIn('derum', f)
+
+    def test_deponent_present_stem_and_endings(self):
+        m = forms_with_morph('vereor', 'vereor, itus, 2, v. dep. a. to fear')
+        self.assertNotIn('uereoreo', m)
+        self.assertEqual(m['ueretur'], '3 s pres ind')
+        self.assertNotIn('ueret', m)
+        m = forms_with_morph('moror', 'moror, atus, 1, v. dep. n. to delay')
+        self.assertNotIn('morat', m); self.assertIn('moratur', m)
+
+
+class TestEncliticSlot(unittest.TestCase):
+    def test_renders_and_parses(self):
+        self.assertEqual(render_morph({'category': 'conj', 'clitic': 'enclitic'}), 'conj enclitic')
+        self.assertEqual(parse_reading('conj enclitic'), {'category': 'conj', 'clitic': 'enclitic'})
+        self.assertEqual(SLOT_ORDER[-1], 'clitic')
+
+
+class TestOfflineRebuild(unittest.TestCase):
+    """lsgloss.py --offline rebuilds the TSV from the checkpoint with no model."""
+
+    def _run(self, ckpt_lines, extra=()):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            (d / 'c.jsonl').write_text('\n'.join(json.dumps(x) for x in ckpt_lines) + '\n', encoding='utf-8')
+            proc = subprocess.run([sys.executable, str(ROOT / 'lsgloss.py'), '--xml', str(FIX / 'mini_xref.xml'),
+                                   '--out', str(d / 'o.tsv'), '--ckpt', str(d / 'c.jsonl'),
+                                   '--url', 'http://127.0.0.1:9/', '--offline'] + list(extra),
+                                  capture_output=True, text=True, timeout=120)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            rows = {}
+            for line in (d / 'o.tsv').read_text(encoding='utf-8').splitlines():
+                if not line.startswith('#'):
+                    f = line.split('\t'); rows[f[0]] = f
+            return rows, proc.stderr
+
+    def test_makes_no_model_call_and_uses_the_checkpoint(self):
+        rows, err = self._run([{'i': 0, 'g': 'true, real, genuine', 'p': 'main'},
+                               {'i': 3, 'g': 'star', 'p': 'main'}])
+        self.assertEqual(rows['verus'][2], 'true, real, genuine')
+        self.assertEqual(rows['stella'][2], 'star')
+        self.assertEqual(rows['vero'][3], 'xref-resolved')          # follows verus
+        self.assertEqual(rows['vero'][2], 'true, real, genuine')
+        self.assertIn('offline', err)
+
+    def test_an_unanswered_row_is_left_empty_not_invented(self):
+        rows, _ = self._run([{'i': 0, 'g': 'true, real, genuine', 'p': 'main'}])
+        self.assertEqual(rows['stella'][2], '')
+
+    def test_carry_keeps_a_model_verified_repair(self):
+        with tempfile.TemporaryDirectory() as d:
+            prev = Path(d) / 'prev.tsv'
+            prev.write_text('verus\tvērus\ttrue, real, genuine\tmodel\n'
+                            'vero\tvērō\tin truth, certainly\txrefix\n', encoding='utf-8')
+            rows, _ = self._run([{'i': 0, 'g': 'true, real, genuine', 'p': 'main'}],
+                                ['--carry', str(prev)])
+            self.assertEqual(rows['vero'][2], 'in truth, certainly')
+            self.assertEqual(rows['vero'][3], 'xrefix')
+
+
+if __name__ == '__main__':
+    unittest.main()

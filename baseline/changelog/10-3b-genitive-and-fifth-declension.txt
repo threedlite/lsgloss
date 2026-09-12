@@ -1,0 +1,55 @@
+characterising 51,643 entries over 8 probes
+
+  clean      unchanged (4,843 rows)
+  enforce    unchanged (7,926 rows)
+  suspect    unchanged (701 rows)
+  xref       unchanged (7,756 rows)
+  stem       CHANGED  +0 -0 ~326  (baseline 22,360 -> 22,360)
+      ~ Paeantiades: paeantius	paeanti	us  =>  paeantius	paeantiades	us
+      ~ Ruminalis1: ficus	fic	us  =>  ficus	ruminalis	us
+      ~ Spaco: cus	c	us  =>  cus	spaco	us
+      ~ abominor: atus	at	us  =>  atus	abominor	us
+      ~ aborior: ortus	ort	us  =>  ortus	aborior	us
+      ~ abutor: usus	us	us  =>  usus	abutor	us
+      ~ adaquor: atus	at	us  =>  atus	adaquor	us
+      ~ adipiscor: eptus	ept	us  =>  eptus	adipiscor	us
+      ~ ... and 318 more
+  forms      CHANGED  +0 -0 ~326  (baseline 51,643 -> 51,643)
+      ~ Paeantiades: 7	b2b9d1509607e980  =>  7	0adce7b1fad2f613
+      ~ Ruminalis1: 7	7795ec29cc8a907f  =>  7	301d130b45c07efc
+      ~ Spaco: 28	eac43c9b9d3599a1  =>  28	845608231aca9bde
+      ~ abominor: 32	411b2c4dfa0681ee  =>  32	2b611971641257ee
+      ~ aborior: 28	3d2253f6e70a7f7b  =>  28	ee3a11bb4f0a88cf
+      ~ abutor: 28	3441fd16571197b5  =>  28	473bbbd9c67d4c2c
+      ~ adaquor: 32	e46aca28884ac6cd  =>  32	5fb462c7a05f14dd
+      ~ adipiscor: 28	1dea443de7db6ea1  =>  28	fe3c7ac750564ec3
+      ~ ... and 318 more
+  lemmafreq  CHANGED  +0 -63 ~253  (baseline 28,255 -> 28,192)
+      - Spaco: 65861
+      - aborior: 1006
+      - admetior: 335
+      - admolior: 61
+      - adorior: 1006
+      - antegredior: 222
+      - circumgredior: 222
+      - circumloquor: 436
+      - ... and 55 more
+      ~ Ruminalis: 174  =>  3
+      ~ abominor: 41  =>  32
+      ~ abutor: 3429  =>  45
+      ~ adaquor: 11  =>  2
+      ~ adminiculor: 23  =>  16
+      ~ admiror: 221  =>  212
+      ~ admurmuror: 10  =>  1
+      ~ adulor: 46  =>  37
+      ~ ... and 245 more
+  norm       unchanged (51,643 rows)
+
+  metrics    (scale) corpus_tokens: 5,193,929 -> 5,093,063
+  metrics    better detector_tokens.empty: 128,236 -> 122,941 (2.469% -> 2.414% of corpus)
+  metrics    better detector_tokens.latin-chars: 1,184 -> 1,175 (0.023% -> 0.023% of corpus)
+  metrics    better detector_tokens.ungrounded: 57,414 -> 57,387 (1.105% -> 1.127% of corpus)
+  metrics    better form_coverage_pct: 60.961 -> 61.134
+  metrics    better form_coverage_tokens: 4,195,911 -> 4,207,835
+
+968 differences from baseline. If they are all intended, re-run with --accept.

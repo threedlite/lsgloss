@@ -1,0 +1,18 @@
+characterising 51,643 entries over 8 probes
+
+  clean      unchanged (4,843 rows)
+  enforce    CHANGED  +0 -0 ~5  (baseline 7,926 -> 7,926)
+      ~ main:11028: one who is of the same village	->	one who is of the  =>  one who is of the same village	->	one who is
+      ~ main:43481: of or lasting half a year	->	of or lasting half a  =>  of or lasting half a year	->	of or lasting half
+      ~ repair:5950: one that is in a consumption	->	one that is in a  =>  one that is in a consumption	->	one that is
+      ~ shorten:11028: one who is of the same village	->	one who is of the  =>  one who is of the same village	->	one who is
+      ~ shorten:5950: one that is in a consumption	->	one that is in a  =>  one that is in a consumption	->	one that is
+  suspect    unchanged (701 rows)
+  xref       unchanged (7,756 rows)
+  stem       unchanged (22,360 rows)
+  forms      unchanged (51,643 rows)
+  lemmafreq  unchanged (28,255 rows)
+  norm       unchanged (51,643 rows)
+
+
+5 differences from baseline. If they are all intended, re-run with --accept.

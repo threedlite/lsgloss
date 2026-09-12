@@ -1,0 +1,286 @@
+inputs:
+  xml   /Users/user1/glimmer/lsgloss/../data-sources/lexica/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml
+  tsv   /Users/user1/glimmer/lsgloss/out/ls_glosses.tsv
+  freq  /Users/user1/glimmer/lsgloss/out/latin_freq.tsv
+  ckpt  /Users/user1/glimmer/lsgloss/../out/ckpt.jsonl
+
+characterising 51,643 entries over 8 probes
+
+  clean      unchanged (4,852 rows)
+  enforce    CHANGED  +0 -0 ~1352  (baseline 7,926 -> 7,926)
+      ~ adapt:12018: of or belonging to a mother	->	of or belonging  =>  of or belonging to a mother	->	belonging to a mother
+      ~ adapt:14729: of or belonging to a lord or master	->	of or belonging  =>  of or belonging to a lord or master	->	lord or master
+      ~ adapt:17938: of or relating to interest or usury	->	of or relating to interest  =>  of or relating to interest or usury	->	relating to interest or usury
+      ~ adapt:19474: of or belonging to generation or birth	->	of or belonging to generation  =>  of or belonging to generation or birth	->	belonging to generation or birth
+      ~ adapt:19903: of or belonging to painting or drawing	->	of or belonging to painting  =>  of or belonging to painting or drawing	->	belonging to painting or drawing
+      ~ adapt:19904: of or belonging to painting or drawing	->	of or belonging to painting  =>  of or belonging to painting or drawing	->	belonging to painting or drawing
+      ~ adapt:26186: of or relating to an embassy	->	of or relating  =>  of or relating to an embassy	->	relating to an embassy
+      ~ adapt:2666: of or pertaining to Annius or Annia	->	of or pertaining to Annius  =>  of or pertaining to Annius or Annia	->	pertaining to Annius or Annia
+      ~ adapt:27060: of or belonging to a grove	->	of or belonging  =>  of or belonging to a grove	->	belonging to a grove
+      ~ adapt:28514: of or belonging to the marten	->	of or belonging  =>  of or belonging to the marten	->	belonging to the marten
+      ~ adapt:28515: of or belonging to the marten	->	of or belonging  =>  of or belonging to the marten	->	belonging to the marten
+      ~ adapt:28516: of or belonging to the marten	->	of or belonging  =>  of or belonging to the marten	->	belonging to the marten
+      ~ ... and 1340 more
+  suspect    CHANGED  +669 -0 ~1  (baseline 1,088 -> 1,757)
+      + Alpinus: fragment
+      + Aniensis: fragment
+      + Anienus2: fragment
+      + Antiochensis2: fragment
+      + Atherianus: fragment
+      + Ausetanus: fragment
+      + Bolbitinus: fragment
+      + Centauricus: fragment
+      + Coloneus: fragment
+      + Corycius: fragment
+      + Crassus2: fragment
+      + Curiatius: fragment
+      + ... and 657 more
+      ~ castrensis: ungrounded  =>  ungrounded,fragment
+  xref       unchanged (7,756 rows)
+  stem       CHANGED  +853 -28 ~8725  (baseline 22,855 -> 23,680)
+      + Achaemenes: is	achaemen	is
+      + Achemenides: is	achemenid	is
+      + Achilles: is	achill	is
+      + Acmonides: is	acmonid	is
+      + Aeginiensis: is	aeginiens	is
+      + Aeschines: is	aeschin	is
+      + Aesis1: is	aes	is
+      + Aesis2: is	aes	is
+      + Agathocles: is	agathocl	is
+      + Alabis: is	alab	is
+      + Albis: is	alb	is
+      + Alcamenes: is	alcamen	is
+      + ... and 841 more
+      - Cupidineus: adi	cupidineus	i
+      - Illuricus: adi	illuricus	i
+      - Quintilianus2: adi	quintilianus	i
+      - actinophoroe: adi	actinophoroe	i
+      - adoriosus: adi	adoriosus	i
+      - alleluja: interi	alleluia	i
+      - aphrodes: adi	aphrodes	i
+      - aplanes: adi	aplanes	i
+      - catax: adi	catax	i
+      - cincinnatus1: adi	cincinnatus	i
+      - donicum: coni	donicum	i
+      - etenim: coni	etenim	i
+      - ... and 16 more
+      ~ Abatos: i	abatos	i  =>  i	abat	i
+      ~ Abellio: onis	abellon	is  =>  onis	abellion	is
+      ~ Accius: ii	accius	i  =>  ii	acci	i
+      ~ Acco: onis	acon	is  =>  onis	accon	is
+      ~ Acheron: ntis	achernt	is  =>  ntis	acheront	is
+      ~ Acheruns: untis	acheruunt	is  =>  untis	acherunt	is
+      ~ Acontizomenos: i	acontizomenos	i  =>  i	acontizomen	i
+      ~ Acrisius: ii	acrisius	i  =>  ii	acrisi	i
+      ~ Actorius2: ii	actorius	i  =>  ii	actori	i
+      ~ Aculeo: onis	aculon	is  =>  onis	aculeon	is
+      ~ Adonis: nis	adonn	is  =>  nis	adon	is
+      ~ Aeginium: ii	aeginium	i  =>  ii	aegini	i
+      ~ ... and 8713 more
+  forms      CHANGED  +0 -0 ~14866  (baseline 51,643 -> 51,643)
+      ~ Abaris: 8	267f3589792f547a  =>  8	b193bbea15acc9a5
+      ~ Abas: 8	f1317544cc9f3bdf  =>  8	86fa77774ba3bf93
+      ~ Abatos: 10	7d1c3ddb92c29f56  =>  6	7a09433263eb1821
+      ~ Abbassus: 9	929f22a94a97438e  =>  8	e15235766ebf6d8e
+      ~ Abellio: 8	1309e72241e95059  =>  8	b7b096320ab7bb2d
+      ~ Absyrtus1: 9	2007330e05a410cd  =>  8	01f83f03f03ed0d3
+      ~ Absyrtus2: 9	2007330e05a410cd  =>  8	01f83f03f03ed0d3
+      ~ Academus: 9	b23b03fe4fc1cc40  =>  8	1dfb33eb3f708543
+      ~ Acamas: 8	706b6df59c67dd1b  =>  8	484d96389284e78a
+      ~ Acanthus2: 9	0d90a596c83ac6f1  =>  8	665faad5394e03ec
+      ~ Acarnan: 8	c832af24e58a7c03  =>  9	4a333fe9eda4ebe4
+      ~ Acastus: 9	62a79fb7d4c6aff1  =>  8	1ea78e8815f731e0
+      ~ ... and 14854 more
+  lemmafreq  CHANGED  +1202 -48 ~4301  (baseline 33,303 -> 34,457)
+      + Aeginiensis: 6
+      + Alabis: 1
+      + Angaris: 1
+      + Arbis1: 6
+      + Arbis2: 6
+      + Asciburgium: 1
+      + Ascletario: 1
+      + Asiagenes: 1
+      + Aspendos: 5
+      + Barnosthenes: 4
+      + Bavius: 1
+      + Bedesis: 1
+      + ... and 1190 more
+      - Tiryns: 1
+      - Vocio: 2
+      - benignor: 93
+      - cilio: 4
+      - climacter: 1
+      - commercior: 118
+      - commereor: 1
+      - commonitor: 8
+      - contiro: 1246
+      - contor: 1
+      - dentio2: 1
+      - deutor: 1
+      - ... and 36 more
+      ~ Accius: 34  =>  64
+      ~ Acco: 4  =>  3
+      ~ Achaemenes: 1  =>  4
+      ~ Achaemenides: 4  =>  7
+      ~ Acheron: 13  =>  41
+      ~ Acheruns: 2  =>  25
+      ~ Achilles: 99  =>  256
+      ~ Acis1: 33  =>  37
+      ~ Acis2: 33  =>  37
+      ~ Acrisius: 3  =>  9
+      ~ Actor2: 155  =>  164
+      ~ Actorius2: 2  =>  3
+      ~ ... and 4289 more
+  norm       unchanged (51,643 rows)
+
+  metrics    (scale) attributed_tokens: 9,257,696 -> 9,607,513
+  metrics    WORSE detector_rows.editorial-apparatus: 0 -> 92
+  metrics    WORSE detector_rows.fragment: 4 -> 571
+  metrics    WORSE detector_rows.ungrounded: 493 -> 504
+  metrics    WORSE detector_tokens.bare-echo: 1,846 -> 1,890 (0.027% -> 0.027% of corpus)
+  metrics    WORSE detector_tokens.editorial-apparatus: 0 -> 767 (0.000% -> 0.011% of corpus)
+  metrics    WORSE detector_tokens.empty: 112,988 -> 114,116 (1.644% -> 1.660% of corpus)
+  metrics    WORSE detector_tokens.etymology-leak: 3,975 -> 4,437 (0.058% -> 0.065% of corpus)
+  metrics    WORSE detector_tokens.fragment: 1,783 -> 24,598 (0.026% -> 0.358% of corpus)
+  metrics    better detector_tokens.head-echo: 15,259 -> 14,265 (0.222% -> 0.208% of corpus)
+  metrics    WORSE detector_tokens.latin-chars: 1,728 -> 1,797 (0.025% -> 0.026% of corpus)
+  metrics    WORSE detector_tokens.ungrounded: 57,343 -> 58,032 (0.834% -> 0.844% of corpus)
+  metrics    WORSE detector_tokens.word-class: 36,880 -> 36,891 (0.537% -> 0.537% of corpus)
+  metrics    better form_coverage_pct: 73.604 -> 77.373
+  metrics    better form_coverage_tokens: 5,059,140 -> 5,318,188
+
+32,056 differences from baseline. If they are all intended, re-run with --accept.
+
+=== after installing the rebuilt TSV (make rebuild) ===
+  clean      unchanged (4,852 rows)
+  enforce    unchanged (7,926 rows)
+  suspect    CHANGED  +0 -633 ~8  (baseline 1,757 -> 1,124)
+      - Alpinus: fragment
+      - Aniensis: fragment
+      - Anienus2: fragment
+      - Antiochensis2: fragment
+      - Atherianus: fragment
+      - Ausetanus: fragment
+      - Bolbitinus: fragment
+      - Centauricus: fragment
+      - Coloneus: fragment
+      - Corycius: fragment
+      - Curiatius: fragment
+      - Cycneius: fragment
+      - ... and 621 more
+      ~ Halicyensis: fragment  =>  latin-chars
+      ~ Menaeus1: fragment  =>  latin-chars
+      ~ Nomaeus: fragment  =>  latin-chars
+      ~ Panathenaicus: fragment  =>  latin-chars
+      ~ Rhoeteus1: fragment  =>  latin-chars
+      ~ citharoedicus: fragment  =>  latin-chars
+      ~ palaestrice: fragment  =>  latin-chars
+      ~ palaestricus: fragment  =>  latin-chars
+  xref       unchanged (7,756 rows)
+  stem       unchanged (23,680 rows)
+  forms      unchanged (51,643 rows)
+  lemmafreq  unchanged (34,457 rows)
+  norm       unchanged (51,643 rows)
+  metrics    better detector_rows.editorial-apparatus: 92 -> 8
+  metrics    WORSE detector_rows.empty: 815 -> 923
+  metrics    better detector_rows.fragment: 571 -> 18
+  metrics    WORSE detector_rows.latin-chars: 150 -> 158
+  metrics    better detector_rows.ungrounded: 504 -> 499
+  metrics    better detector_tokens.editorial-apparatus: 767 -> 284 (0.011% -> 0.004% of corpus)
+  metrics    WORSE detector_tokens.empty: 114,116 -> 161,938 (1.660% -> 2.356% of corpus)
+  metrics    better detector_tokens.fragment: 24,598 -> 3,324 (0.358% -> 0.048% of corpus)
+  metrics    WORSE detector_tokens.latin-chars: 1,797 -> 1,843 (0.026% -> 0.027% of corpus)
+  metrics    better detector_tokens.ungrounded: 58,032 -> 57,949 (0.844% -> 0.843% of corpus)
+  metrics    WORSE glossed_rows: 50,828 -> 50,720
+646 differences from baseline. If they are all intended, re-run with --accept.
+
+=== y-breve folding, cut-off fragments, name-category rendering ===
+  clean      CHANGED  +179 -0 ~4  (baseline 4,852 -> 5,031)
+      + adapt:19253: Roman gens name	->	Roman family name
+      + adapt:28024: Roman gens name of Marcius	->	Roman family name of Marcius
+      + adapt:32765: Roman gens name of Opimius	->	Roman family name of Opimius
+      + adapt:36664: Roman gens name of Plautius	->	Roman family name of Plautius
+      + adapt:5672: Roman cognomen of the Brigantes	->	Roman surname of the Brigantes
+      + adapt:6092: Roman cognomen	->	Roman surname
+      + ... and 173 more
+      ~ main:37065: Roman gens name, originally Samnite	->	Roman gens name  =>  Roman gens name, originally Samnite	->	Roman family name
+      ~ main:51208: Roman gens name; emperor Vitellius; Vitellian (adj.) of Vitellius; Vitellians (soldiers) of Vitellius; writing tablets used by Vitellius	->	Roman gens name  =>  Roman gens name; emperor Vitellius; Vitellian (adj.) of Vitellius; Vitellians (soldiers) of Vitellius; writing tablets used by Vitellius	->	Roman family name
+      ~ main:9442: Roman cognomen; of or pertaining to Commodus	->	Roman cognomen  =>  Roman cognomen; of or pertaining to Commodus	->	Roman surname
+      ~ repair:4548: Roman nomen, e.g	->	Roman nomen  =>  Roman nomen, e.g	->	Roman family name
+  enforce    CHANGED  +0 -1 ~12  (baseline 7,926 -> 7,925)
+      - repair:50350: name of a Roman gens: Vedius Pollio	->	name
+      ~ main:42136: Roman gens name of the Rutilii	->	Roman gens name  =>  Roman family name of the Rutilii	->	Roman family name
+      ~ main:43669: Roman cognomen of the gens Annaea	->	Roman cognomen  =>  Roman surname of the gens Annaea	->	Roman surname
+      ~ main:49400: Roman cognomen in the gens Postumius	->	Roman cognomen  =>  Roman surname in the gens Postumius	->	Roman surname
+      ~ main:49407: Roman cognomen in the gens Hostilia	->	Roman cognomen  =>  Roman surname in the gens Hostilia	->	Roman surname
+      ~ main:5753: Roman cognomen of the Junii family	->	Roman cognomen  =>  Roman surname of the Junii family	->	Roman surname
+      ~ main:6109: Roman cognomen in the gens Fabia	->	Roman cognomen  =>  Roman surname in the gens Fabia	->	Roman surname
+      ~ ... and 6 more
+  suspect    CHANGED  +21 -0 ~2  (baseline 1,124 -> 1,145)
+      + Bacchylides: bare-echo
+      + Caryae: bare-echo
+      + Cibyra: bare-echo
+      + Corycus2: bare-echo
+      + Cyparissa: bare-echo
+      + Cytorus: bare-echo
+      + ... and 15 more
+      ~ Eurynome: ungrounded  =>  ungrounded,bare-echo
+      ~ tithymalis: ungrounded,latin-chars,head-echo  =>  ungrounded,latin-chars
+  xref       unchanged (7,756 rows)
+  stem       unchanged (23,680 rows)
+  forms      CHANGED  +0 -0 ~1061  (baseline 51,643 -> 51,643)
+      ~ Abdalonymus: 1	1f787c6ad63778d8  =>  1	ac661d3c2c88885e
+      ~ Abdolonymus: 1	1081c8d42c2b7074  =>  1	da39e4d7a42c675a
+      ~ Abyla: 1	88b6e5757f9a1a8a  =>  1	c4a05fd60349ab20
+      ~ Aeschylus: 1	714195c29676a455  =>  1	3df89b9eb9b023cb
+      ~ Alcyone: 1	35914bbb11c7c703  =>  1	81be581c7730183e
+      ~ Alyattes: 1	d7180871a1b8f2a3  =>  1	c6231c8dccac447a
+      ~ ... and 1055 more
+  lemmafreq  CHANGED  +548 -17 ~22  (baseline 34,457 -> 34,988)
+      + Abdalonymus: 1
+      + Aeschylus: 15
+      + Alyattes: 1
+      + Amphictyones: 3
+      + Ampycides: 4
+      + Ampycus: 1
+      + ... and 542 more
+      - Astyra: 242
+      - Caryae: 27
+      - Cercyo: 2
+      - Cylonius: 1
+      - Cyneus: 4
+      - Minyeus: 1
+      - ... and 11 more
+      ~ Alcyone: 3  =>  13
+      ~ Caryus: 1246  =>  5
+      ~ Cyane: 50  =>  8
+      ~ Dryas1: 1  =>  5
+      ~ Dryas2: 1  =>  5
+      ~ Hyas1: 1201  =>  5
+      ~ ... and 16 more
+  norm       CHANGED  +0 -0 ~1061  (baseline 51,643 -> 51,643)
+      ~ Abdalonymus: abdalonmus	abdalonmus	abdalonmus  =>  abdalonymus	abdalonymus	abdalonymus
+      ~ Abdolonymus: abdolonmus	abdolonmus	abdolonmus  =>  abdolonymus	abdolonymus	abdolonymus
+      ~ Abyla: abla	abla	abla  =>  abyla	abyla	abyla
+      ~ Aeschylus: aeschlus	aeschlus	aeschlus  =>  aeschylus	aeschylus	aeschylus
+      ~ Alcyone: alcone	alcone	alcone  =>  alcyone	alcyone	alcyone
+      ~ Alyattes: alattes	alattes	alattes  =>  alyattes	alyattes	alyattes
+      ~ ... and 1055 more
+  metrics    (scale) attributed_tokens: 9,607,513 -> 9,601,076
+  metrics    WORSE detector_rows.bare-echo: 35 -> 53
+  metrics    WORSE detector_rows.empty: 923 -> 924
+  metrics    WORSE detector_rows.fragment: 18 -> 23
+  metrics    better detector_rows.head-echo: 59 -> 58
+  metrics    WORSE detector_tokens.bare-echo: 1,890 -> 1,921 (0.027% -> 0.028% of corpus)
+  metrics    WORSE detector_tokens.empty: 161,938 -> 162,146 (2.356% -> 2.359% of corpus)
+  metrics    better detector_tokens.etymology-leak: 4,437 -> 4,439 (0.065% -> 0.065% of corpus)
+  metrics    WORSE detector_tokens.fragment: 3,324 -> 3,856 (0.048% -> 0.056% of corpus)
+  metrics    WORSE detector_tokens.latin-chars: 1,843 -> 1,882 (0.027% -> 0.027% of corpus)
+  metrics    WORSE detector_tokens.ungrounded: 57,949 -> 57,971 (0.843% -> 0.843% of corpus)
+  metrics    better form_coverage_pct: 77.373 -> 77.406
+  metrics    better form_coverage_tokens: 5,318,188 -> 5,320,444
+  metrics    WORSE glossed_rows: 50,720 -> 50,719
+2,937 differences from baseline. If they are all intended, re-run with --accept.
+
+=== carried rows re-cleaned (make rebuild now ends with refinalise) ===
+no change from baseline.

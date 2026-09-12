@@ -1,0 +1,35 @@
+NOTE: detector_rows/tokens.head-echo 0 -> 59 is a NEW detector, not a regression.
+
+characterising 51,643 entries over 8 probes
+
+  clean      unchanged (4,852 rows)
+  enforce    unchanged (7,926 rows)
+  suspect    CHANGED  +42 -0 ~17  (baseline 1,045 -> 1,087)
+      + antistrophe: head-echo
+      + buda: head-echo
+      + cillo2: head-echo
+      + climax: head-echo
+      + combibo2: head-echo
+      + congero2: head-echo
+      + cooperator: head-echo
+      + crepusculum: head-echo
+      + ... and 34 more
+      ~ adjectus2: latin-chars  =>  latin-chars,head-echo
+      ~ admurmuror: latin-chars  =>  latin-chars,head-echo
+      ~ bennarius: latin-chars  =>  latin-chars,head-echo
+      ~ coleatus: latin-chars,bare-echo  =>  latin-chars,bare-echo,head-echo
+      ~ concubo: latin-chars  =>  latin-chars,head-echo
+      ~ constratum: latin-chars,bare-echo  =>  latin-chars,bare-echo,head-echo
+      ~ dogarius: latin-chars  =>  latin-chars,head-echo
+      ~ falisca: latin-chars,bare-echo  =>  latin-chars,bare-echo,head-echo
+      ~ ... and 9 more
+  xref       unchanged (7,756 rows)
+  stem       unchanged (22,360 rows)
+  forms      unchanged (51,643 rows)
+  lemmafreq  unchanged (29,002 rows)
+  norm       unchanged (51,643 rows)
+
+  metrics    WORSE detector_rows.head-echo: 0 -> 59
+  metrics    WORSE detector_tokens.head-echo: 0 -> 15,067 (0.000% -> 0.219% of corpus)
+
+61 differences from baseline. If they are all intended, re-run with --accept.

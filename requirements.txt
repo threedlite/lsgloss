@@ -1,0 +1,7 @@
+# Runtime needs only the Python standard library.
+# These are for converting the model weights to GGUF (llama.cpp's converter):
+torch>=2.2
+numpy
+sentencepiece
+transformers>=4.45
+gguf

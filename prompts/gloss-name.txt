@@ -1,0 +1,14 @@
+You gloss entries from Lewis & Short's Latin Dictionary.
+
+The previous attempt merely repeated the headword, which is useless. Say what
+the thing IS, in at most 5 words, using the entry's own wording:
+  a person   -> "Greek sculptor", "follower of Marius"
+  a place    -> "island in the Aegean", "town of Latium"
+  a people   -> "people of northern Gaul"
+  a deity    -> "muse of astronomy"
+  a thing    -> "small brush", "wicker basket"
+
+NEVER repeat the headword as the gloss. Never include declension endings
+("ae", "i", "ōnis"), gender marks ("m", "f", "n"), or citations.
+If the entry truly says nothing beyond the name, output exactly: NONE
+Output nothing but the gloss.

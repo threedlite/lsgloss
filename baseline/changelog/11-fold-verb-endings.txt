@@ -1,0 +1,39 @@
+characterising 51,643 entries over 8 probes
+
+  clean      unchanged (4,837 rows)
+  enforce    unchanged (7,926 rows)
+  suspect    unchanged (701 rows)
+  xref       unchanged (7,756 rows)
+  stem       unchanged (22,360 rows)
+  forms      CHANGED  +0 -0 ~7049  (baseline 51,643 -> 51,643)
+      ~ Abdalonymus: 26	1914752247ce0ba1  =>  26	d71fad580e231a13
+      ~ Abeona: 27	dca938662731c392  =>  27	513930d300fd6614
+      ~ Achaemenius: 26	74a072178c6dfe32  =>  26	3d42b290b4c8332e
+      ~ Acherontia: 27	e3f6c14f73280f83  =>  27	9604bd4d926a2dd0
+      ~ Acheruns: 30	a71e65975bbbb49c  =>  30	2505b249f3ea58f5
+      ~ Acherusia: 31	d580854e57e642d8  =>  31	7a8c7f1572cfeb89
+      ~ ... and 7043 more
+  lemmafreq  CHANGED  +30 -0 ~935  (baseline 28,225 -> 28,255)
+      + abligurrio: 1
+      + adesurio: 1
+      + adremigo: 1
+      + affiguro: 1
+      + apologo: 1
+      + circumlustro: 1
+      + ... and 24 more
+      ~ Bato: 3  =>  17
+      ~ Celer: 310  =>  311
+      ~ Libo: 147  =>  161
+      ~ abalieno: 10  =>  22
+      ~ abdico: 201  =>  294
+      ~ aberro: 23  =>  36
+      ~ ... and 929 more
+  norm       unchanged (51,643 rows)
+
+  metrics    (scale) corpus_tokens: 5,179,951 -> 5,193,929
+  metrics    better detector_tokens.empty: 128,208 -> 128,236 (2.475% -> 2.469% of corpus)
+  metrics    better detector_tokens.ungrounded: 57,413 -> 57,414 (1.108% -> 1.105% of corpus)
+  metrics    better form_coverage_pct: 60.76 -> 60.961
+  metrics    better form_coverage_tokens: 4,182,086 -> 4,195,911
+
+8,014 differences from baseline. If they are all intended, re-run with --accept.
