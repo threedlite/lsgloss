@@ -60,13 +60,17 @@ def _collapse(g):
 # belonging TO A DEITY" is cut down to when the cap falls on "to": 555 rows
 # shipped as the bare "of or belonging" and "of or pertaining", and no detector
 # saw them because "belonging" is not a preposition.
-DANGLE_EXTRA={'a','an','the','belonging','pertaining','relating'}
+# ...and a relative-clause opener: "pertaining to the place where" is as cut
+# off as "pertaining to the"
+RELATIVE={'where','which','who','whose','whom','when','that'}
+DANGLE_EXTRA={'a','an','the','belonging','pertaining','relating'} | RELATIVE
 BREAK={'of','from','in','on','to','with','by','for','at','into','among','between',
        'over','under','through','about','against','before','after','upon','and','or'}
 
 CONTENTLESS = {'of','to','in','on','at','by','for','with','from','and','or','the','a','an',
                'that','this','is','be','it','as','not','so','if','one','who','which','was','were',
                'into','out','up','down','off','over','been','are','him','her','them',
+               'he','she','they','those','these',
                'belonging','pertaining','relating'}
 
 def _contentless(s):
@@ -78,7 +82,10 @@ def _contentless(s):
 # "of the colour"; dropping the leading preposition keeps the informative tail.
 # "of or belonging to a deity" loses "of or" before it loses "belonging to".
 LEAD_STRIPS = [
-    re.compile(r'^of or (?=(?:belonging|pertaining|relating) to\b)', re.I),
+    # "of or X <preposition>": belonging to, pertaining to, made of, suited to,
+    # caused by, proceeding from, dwelling in. Naming the three participles left
+    # seven rows shipping as "of or made", "of or suited", "of or dwelling".
+    re.compile(r'^of or (?=\w+ (?:to|of|from|by|in|with|for|on|at|among)\b)', re.I),
     re.compile(r'^(of|to|in|for|belonging to|relating to|pertaining to)\s+(the|a|an)\s+', re.I),
     re.compile(r'^(?:of or )?(?:belonging|pertaining|relating) to\s+(?:(?:the|a|an)\s+)?', re.I),
 ]
@@ -91,7 +98,16 @@ def enforce(g, maxwords=5):
     as broken, so prefer the last preposition/conjunction at or under the cap.
     """
     if len(g.split()) > maxwords:
-        for rx in LEAD_STRIPS:
+        # A trailing parenthetical is the least informative part: without this,
+        # "of or amounting to a scruple (in weight)" was cut to "amounting"
+        g = TAILPAREN.sub('', g).strip(' .,;:') or g
+        # "of or" goes first and unconditionally: "of or suited to an assembly
+        # of the people" is still over the cap without it, and the cut below
+        # then lands on "suited to an assembly" instead of "of or suited"
+        if LEAD_STRIPS[0].match(g):
+            g = LEAD_STRIPS[0].sub('', g).strip()
+    if len(g.split()) > maxwords:
+        for rx in LEAD_STRIPS[1:]:
             if rx.match(g):
                 stripped = rx.sub('', g).strip()
                 if stripped and len(stripped.split()) <= maxwords:
@@ -100,7 +116,9 @@ def enforce(g, maxwords=5):
     w = g.split()
     if len(w) <= maxwords:
         return g
-    cuts = [i for i, x in enumerate(w) if x.lower().strip(',;') in BREAK and 0 < i <= maxwords]
+    # A relative clause is a phrase boundary too: "king of Mycenae who imposed
+    # the labours" cuts to "king of Mycenae", not to "king"
+    cuts = [i for i, x in enumerate(w) if x.lower().strip(',;') in BREAK | RELATIVE and 0 < i <= maxwords]
     cut = max(cuts) if cuts else maxwords
     out = _undangle(w[:cut])
     if not out:
@@ -167,3 +185,98 @@ def clean(g, maxwords=5):
         t=TAILPAREN.sub('',g).strip(' .,;:')
         if t and len(t.split())<=maxwords: g=t
     return g
+
+
+# ---------------------------------------------------------- unstated nationality
+# The system prompt says "never state a nationality the entry does not state".
+# The model does anyway: "Athenian" is its default for any Greek name -- 40
+# entries where L&S says only "a sculptor", "a warrior", "a shepherdess" -- and
+# the grounding check cannot see it when the other word IS in the entry
+# ("Athenian sculptor" on *Timarchides*, "a sculptor, Plin."). This is the
+# prompt's rule applied mechanically: an ethnic adjective whose root the entry
+# never mentions is removed, and the rest of the gloss stands. It never invents
+# text and never empties a gloss.
+#
+# Only the head noun phrase is touched -- "Athenian sculptor", "celebrated
+# Greek general", "hail! (Persian)" -- because that is where the model puts the
+# invented one, and cutting an adjective out of a later phrase leaves "island
+# in the Sea". Only glosses written from THIS entry are checked: a
+# cross-reference takes its wording from the target's entry, as the grounding
+# check already allows for.
+#
+# "Roman" and "Latin" are the dictionary's own frame -- "a surname in the gens
+# Cornelia" is a Roman surname without saying so -- and are left alone.
+NATIONALITY_SOURCES = {'model', 'repaired', 'hard', 'hard2', 'named', 'freqfix'}
+ETHNIC = re.compile(r'^\(?([A-Z][a-z]+?)(ian|ean|an|ic|ish|ese)\)?[,;.:]?$')
+ETHNIC_FRAME = {'Roman', 'Latin'}
+# roots the entry may use instead of the adjective's own: "Greek" is Graecus,
+# "Spanish" is Hispania, and an entry that quotes the Greek word states it
+ETHNIC_ROOTS = {'Greek': ('graec', 'greek'), 'Grecian': ('graec', 'greek'),
+                'Spanish': ('hispan', 'spain'), 'Gallic': ('gall', 'gaul'),
+                'Punic': ('poen', 'pun'), 'Carthaginian': ('carthag', 'poen'),
+                'Etruscan': ('etru', 'tusc'), 'Ethiopian': ('aethiop',),
+                'Egyptian': ('aegypt',), 'Jewish': ('iud', 'jew', 'hebr'),
+                'Asiatic': ('asia',), 'Aegean': ('aegae', 'aege'),
+                'Sicilian': ('sicil', 'sicul'), 'Athenian': ('athen', 'attic')}
+GREEK_SCRIPT = re.compile(r'[\u0370-\u03ff\u1f00-\u1fff]')
+PHRASE_BREAK = BREAK | {'a', 'an', 'the'}
+
+def _ethnic_fold(s):
+    import unicodedata
+    s = s.translate(str.maketrans({'æ': 'ae', 'œ': 'oe', 'Æ': 'ae', 'Œ': 'oe'})).lower()
+    s = unicodedata.normalize('NFKD', s)
+    s = ''.join(c for c in s if not unicodedata.combining(c))
+    return s.replace('ae', 'e').replace('oe', 'e').replace('j', 'i').replace('v', 'u').replace('y', 'i')
+
+def _ethnic_roots(word):
+    """The roots an ethnic adjective must find in the entry, or None if the
+    word is not one (or is one the dictionary's frame supplies)."""
+    bare = word.strip('(),;.:')
+    if bare in ETHNIC_FRAME:
+        return None
+    m = ETHNIC.match(word)
+    if not m and bare not in ETHNIC_ROOTS:
+        return None
+    roots = [_ethnic_fold(bare)]
+    if m:
+        roots.append(_ethnic_fold(m.group(1)))
+    roots += [_ethnic_fold(r) for r in ETHNIC_ROOTS.get(bare, ())]
+    roots = tuple(r for r in roots if len(r) >= 3)
+    return roots or None
+
+def strip_unstated_nationality(g, entry_text, source=None):
+    """Remove a leading ethnic adjective the entry never mentions: "Athenian
+    sculptor" on an entry reading "a sculptor" becomes "sculptor". Idempotent;
+    the gloss comes back unchanged when nothing is unstated, when the source
+    did not write from this entry, or when nothing would be left."""
+    if source is not None and source.rstrip('~?!') not in NATIONALITY_SOURCES:
+        return g
+    words = g.split()
+    if not any(w.lstrip('(')[:1].isupper() for w in words):
+        return g
+    folded = None
+    keep, in_head = [], True
+    for w in words:
+        bare = w.strip('(),;.:').lower()
+        candidate = in_head or (w.startswith('(') and w.rstrip(',;.:').endswith(')'))
+        if bare in PHRASE_BREAK:
+            in_head = False
+        if w.rstrip().endswith((',', ';')):
+            in_head = True
+        roots = _ethnic_roots(w) if candidate else None
+        if roots is None:
+            keep.append(w); continue
+        if folded is None:
+            folded = _ethnic_fold(entry_text)
+            body_words = set(re.findall(r'[a-z]+', folded))
+            has_greek = bool(GREEK_SCRIPT.search(entry_text))
+        stated = any(r in bw for r in roots for bw in body_words)
+        if not stated and w.strip('(),;.:') in ('Greek', 'Grecian') and has_greek:
+            stated = True
+        if stated:
+            keep.append(w)
+    if len(keep) == len(words):
+        return g
+    out = _undangle(keep)
+    res = ' '.join(out).strip(' .,;:')
+    return res if res else g

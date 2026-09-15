@@ -18,16 +18,21 @@ Two numbers, and the difference between them matters:
 
 A gender of `c` (common) is compatible with `m` or `f` by definition.
 """
-import sys, csv, io, zipfile, collections
+import sys, csv, io, re, zipfile, collections
 sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent.parent))
-from inflect import parse_reading as parse
+from inflect import parse_reading as parse, merge_morph
 from eval.treebank import gold_triples, compatible
 ZIP, TB = sys.argv[1], sys.argv[2]
 
+# The gold lemma has its homograph number stripped; so must ours. A form only a
+# minor homograph makes ships under its numbered key (`sio` -> `sion2`), and
+# keying on the raw string scored every such row "lemma not offered".
 rows = collections.defaultdict(dict)
 with zipfile.ZipFile(ZIP) as z:
     for r in csv.DictReader(io.TextIOWrapper(z.open('morphology.csv'), encoding='utf-8')):
-        rows[r['word_form']][r['lemma']] = r['morph_info']
+        lem = re.sub(r'\d+$', '', r['lemma'])
+        cell = rows[r['word_form']].get(lem)
+        rows[r['word_form']][lem] = merge_morph(cell, r['morph_info']) if cell else r['morph_info']
 
 gold = gold_triples(TB)
 
@@ -42,7 +47,9 @@ for (form, lemma, g), n in gold.items():
     readings = cell.split('|')
     spread.append(len(readings))
     gd = parse(g)
-    if g in readings:
+    # the `clitic` slot marks the enclitic half of a token and is not a
+    # reading; `compatible` ignores it, and so does exactness
+    if any({k: v for k, v in parse(r).items() if k != 'clitic'} == gd for r in readings):
         tok['exact'] += n
     elif any(compatible(parse(r), gd) for r in readings):
         tok['compatible (we say less)'] += n

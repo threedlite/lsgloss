@@ -39,7 +39,6 @@ class TestMetalinguisticGloss(unittest.TestCase):
     particle". 10 rows, 223,056 tokens. See the first test for what is still open.
     """
 
-    @unittest.expectedFailure
     def test_flags_departure_from_a_fixed_point(self):
         # STILL OPEN, and probably not fixable with a detector. This gloss names
         # no word class and uses no metalinguistic verb; it is an ordinary English

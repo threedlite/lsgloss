@@ -39,7 +39,7 @@ class TestGlossTsv(unittest.TestCase):
         self.assertEqual(bad[:3], [])
 
     def test_source_column_is_from_the_known_set(self):
-        known = {'model', 'repaired', 'tr', 'xref-resolved', 'xref-adapted', 'no-gloss',
+        known = {'model', 'repaired', 'tr', 'xref-resolved', 'xref-adapted', 'no-gloss', 'ls',
                  'hard', 'hard2', 'named', 'freqfix', 'override',
                  'xrefix', 'refilled'}
         bad = {r[3].rstrip('~?!') for r in self.rows} - known

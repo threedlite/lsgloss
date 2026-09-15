@@ -168,10 +168,15 @@ TARGET = re.compile(r'(?<![A-Za-z])(?:v\.|vide|cf\.|q\.\s*v\.)\s*'
 VERB_SUBTYPE = {'a', 'n', 'act', 'pass', 'dep', 'semidep', 'freq', 'inch', 'incoh',
                 'impers', 'intens', 'desid', 'defect', 'irreg'}
 # "abditus, a, um, Part. of abdo."  /  "secretus, Part. and P. a., from secerno."
-DERIV = re.compile(r'\b(?:Part\.|P\.\s*a\.|Sup\.|Comp\.)[^.]{0,30}?,?\s*(?:from|of)\s+'
+DERIV = re.compile(r'\b(?:Part\.|P\.\s*a\.|Sup\.|Comp\.|[Ii]nf\.)[^.]{0,30}?,?\s*(?:from|of)\s+'
                    r'(?P<word>[A-Za-zÀ-ɏ\'-]+)', re.I)
 # "v. the foll. art." points at the next entry; "preced." at the previous one
 FOLL = re.compile(r'\b(foll|preced)\w*\.?\s+art', re.I)
+# "cf. Fronto Ter. Als. 4." cites the author Fronto, not the entry `fronto`
+# ("broad-forehead person", which is what `illatenus` shipped as). A
+# capitalised target followed by another abbreviation, by a number, or by
+# ". p." is a citation. "v. Illiberi." and "v. Hispani, II. A. fin." are not.
+CITATION_TAIL = re.compile(r'\s+(?:[A-Z][A-Za-z]{0,7}\.|\d)|\.\s+(?:p\.|\d)')
 
 
 def xref_target_word(body):
@@ -179,6 +184,8 @@ def xref_target_word(body):
     text = re.sub(r'\([^()]*\)', ' ', body)
     for m in TARGET.finditer(text):
         w = m.group('word')
+        if w[:1].isupper() and CITATION_TAIL.match(text, m.end()):
+            continue
         # "v. h. v." is *vide hoc verbum*; a one-letter target is never an entry
         # a reader wants ("patalis, false reading of patulus, v. h. v." resolved
         # to the letter h, "eighth letter of the alphabet")

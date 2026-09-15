@@ -1,0 +1,189 @@
+# nationality: 188 rows -- regenerate with `make baseline`
+adapt:11195	Corinth, Peloponnesian city	->	Corinth, city
+adapt:11439	Thracian prince	->	prince
+adapt:11889	ancient Campanian colony	->	ancient colony
+adapt:12011	ancient Cretan people worshipping Jupiter with music and dance	->	ancient people worshipping Jupiter with music and dance
+adapt:12022	Albanian gens	->	gens
+adapt:12153	ancient Campanian colony	->	ancient colony
+adapt:12260	Scythian tribe beyond Caspian Sea	->	tribe beyond Sea
+adapt:14079	Bacchus, Greek god	->	Bacchus, god
+adapt:1512	African people of Africa	->	people of Africa
+adapt:1679	German tribes	->	tribes
+adapt:18933	Etruscan name for Venus	->	name for Venus
+adapt:19333	Gallic tribe in Mont Cenis valleys	->	tribe in Mont Cenis valleys
+adapt:19577	Thracian tribe on the Danube	->	tribe on the Danube
+adapt:19578	Thracian tribe on the Danube	->	tribe on the Danube
+adapt:20555	Stoic philosopher of Carthage	->	philosopher of Carthage
+adapt:20880	Homer, Greek poet	->	Homer, poet
+adapt:20883	Homer, Greek poet	->	Homer, poet
+adapt:21291	of Iapyx, Apulian, Calabrian	->	of Iapyx
+adapt:24878	Jewish historian	->	historian
+adapt:2516	Gallic tribe in present Anjou	->	tribe in present Anjou
+adapt:25229	Sarmatian people on the Danube	->	people on the Danube
+adapt:2657	Punic surname Hannibal	->	surname Hannibal
+adapt:27396	Germanic people on the Weser	->	people on the Weser
+adapt:27425	Athenian orator	->	orator
+adapt:27455	Macedonian people	->	people
+adapt:27605	magician, learned Persian magician	->	magician, learned magician
+adapt:27809	Oscan name for Mars	->	name for Mars
+adapt:28013	ancient Phoenician city opposite Arados island	->	ancient city opposite Arados island
+adapt:28358	Medi, Assyrian, Persian, Parthian	->	Medi
+adapt:28903	Messina, Sicilian city	->	Messina, city
+adapt:29008	Italian proper name	->	proper name
+adapt:29339	Persian precious stone	->	precious stone
+adapt:30378	Germanic people of the Lygians	->	people of the Lygians
+adapt:30446	Libyan people south‑west of Cyrenaica	->	people south‑west of Cyrenaica
+adapt:3338	acre (Gallic)	->	acre
+adapt:33819	high mountain beyond Caspian Sea	->	high mountain beyond Sea
+adapt:34498	Greek mythological king of Phrygia	->	mythological king of Phrygia
+adapt:34674	Athenian courtesan	->	courtesan
+adapt:34900	Athenian courtesan	->	courtesan
+adapt:35951	ancient Greek poet	->	ancient poet
+adapt:36193	Parthian kings	->	kings
+adapt:3629	Persian province between Hyrcania and Gedrosia	->	province between Hyrcania and Gedrosia
+adapt:38583	Grecian sophist of Ceos	->	sophist of Ceos
+adapt:42472	Celtic or Ligurian tribe in Gallia	->	or Ligurian tribe in Gallia
+adapt:42509	ancient Italian country near	->	ancient country near
+adapt:42636	wide Persian trousers	->	wide trousers
+adapt:42664	Sardis, ancient Lydian capital	->	Sardis, ancient capital
+adapt:42666	Sardis, ancient Lydian capital	->	Sardis, ancient capital
+adapt:42678	Sardinian people of Sardinia	->	people of Sardinia
+adapt:42679	Sardinian people of Sardinia	->	people of Sardinia
+adapt:42687	African juggler	->	juggler
+adapt:4366	young Phrygian shepherd	->	young shepherd
+adapt:43873	chief Egyptian divinity worshipped in Greece and Rome	->	chief divinity worshipped in Greece and Rome
+adapt:43876	chief Egyptian divinity worshipped in Greece and Rome	->	chief divinity worshipped in Greece and Rome
+adapt:44071	Gallic tribe	->	tribe
+adapt:44228	Sidon, ancient Phoenician city	->	Sidon, ancient city
+adapt:44712	famous Athenian legislator	->	famous legislator
+adapt:48328	Thracian people emigrated to Bithynia	->	people emigrated to Bithynia
+adapt:49736	Olympian hero	->	hero
+adapt:53	Sidonian of royal descent	->	of royal descent
+adapt:5609	large Italian serpent	->	large serpent
+adapt:5985	Greek hero	->	hero
+adapt:6856	Celtic people in Upper Italy	->	people in Upper Italy
+adapt:7156	German people in Hesse and Thuringia	->	people in Hesse and Thuringia
+adapt:7552	beer, Gallic	->	beer
+adapt:7611	beer, Gallic	->	beer
+adapt:7656	short Spanish shield	->	short shield
+hard:1622	Sicilian city	->	city
+hard:21317	Iberian, Spanish	->	Iberian
+hard:39844	Delphic priestess	->	priestess
+main:11139	Athenian courtesan	->	courtesan
+main:11187	Athenian courtesan	->	courtesan
+main:11248	Athenian courtesan	->	courtesan
+main:12280	Athenian sculptor	->	sculptor
+main:12290	Athenian sculptor	->	sculptor
+main:12295	Athenian courtesan	->	courtesan
+main:12322	Athenian shepherd	->	shepherd
+main:12838	Athenian courtesan	->	courtesan
+main:13399	Athenian painter	->	painter
+main:14675	Athenian courtesan	->	courtesan
+main:14763	Athenian courtesan	->	courtesan
+main:16338	Athenian courtesan	->	courtesan
+main:1695	Athenian courtesan	->	courtesan
+main:1770	Athenian courtesan	->	courtesan
+main:1795	Athenian courtesan	->	courtesan
+main:18317	Athenian courtesan	->	courtesan
+main:18523	Athenian courtesan	->	courtesan
+main:19099	Athenian courtesan	->	courtesan
+main:20225	Athenian teacher	->	teacher
+main:20366	Athenian courtesan	->	courtesan
+main:20372	Athenian courtesan	->	courtesan
+main:20559	Athenian courtesan	->	courtesan
+main:20575	Athenian courtesan	->	courtesan
+main:20576	Athenian courtesan	->	courtesan
+main:20586	Athenian courtesan	->	courtesan
+main:2088	Athenian courtesan	->	courtesan
+main:20928	Athenian courtesan	->	courtesan
+main:21020	Athenian courtesan	->	courtesan
+main:2104	Athenian courtesan	->	courtesan
+main:2120	Athenian shepherdess	->	shepherdess
+main:2184	Athenian courtesan	->	courtesan
+main:2322	Athenian courtesan	->	courtesan
+main:2523	Athenian slave	->	slave
+main:25553	Athenian courtesan	->	courtesan
+main:25938	Athenian imitator of Ulysses	->	imitator of Ulysses
+main:26181	Athenian courtesan	->	courtesan
+main:26269	Athenian courtesan	->	courtesan
+main:26299	Athenian courtesan	->	courtesan
+main:26383	Athenian courtesan	->	courtesan
+main:26456	Athenian warrior	->	warrior
+main:26604	Athenian courtesan	->	courtesan
+main:26627	Athenian courtesan	->	courtesan
+main:26930	Athenian courtesan	->	courtesan
+main:27056	Athenian warrior	->	warrior
+main:27349	Athenian warrior	->	warrior
+main:27438	Athenian courtesan	->	courtesan
+main:27439	Athenian sculptor	->	sculptor
+main:27678	Athenian courtesan	->	courtesan
+main:27689	Athenian courtesan	->	courtesan
+main:27714	Athenian courtesan	->	courtesan
+main:28024	Athenian courtesan	->	courtesan
+main:28499	Athenian shepherd	->	shepherd
+main:2864	Athenian courtesan	->	courtesan
+main:28650	Athenian courtesan	->	courtesan
+main:29032	Athenian courtesan	->	courtesan
+main:29447	Athenian courtesan	->	courtesan
+main:29787	Athenian courtesan	->	courtesan
+main:30562	Athenian courtesan	->	courtesan
+main:31035	Athenian courtesan	->	courtesan
+main:33089	Athenian courtesan	->	courtesan
+main:33891	Athenian courtesan	->	courtesan
+main:35090	Athenian courtesan	->	courtesan
+main:35341	Athenian courtesan	->	courtesan
+main:35847	Athenian courtesan	->	courtesan
+main:3606	Athenian courtesan	->	courtesan
+main:36189	Athenian courtesan	->	courtesan
+main:36474	Athenian courtesan	->	courtesan
+main:36879	Athenian music-teacher	->	music-teacher
+main:36937	Athenian actor	->	actor
+main:3747	Athenian courtesan	->	courtesan
+main:3791	Athenian courtesan	->	courtesan
+main:3793	Athenian courtesan	->	courtesan
+main:38418	Athenian courtesan	->	courtesan
+main:3871	Athenian courtesan	->	courtesan
+main:3956	Athenian courtesan	->	courtesan
+main:39824	Athenian courtesan	->	courtesan
+main:39851	Athenian courtesan	->	courtesan
+main:41720	Athenian courtesan	->	courtesan
+main:4319	Athenian courtesan	->	courtesan
+main:44022	Athenian courtesan	->	courtesan
+main:44795	Athenian courtesan	->	courtesan
+main:44799	Athenian composer of mimes	->	composer of mimes
+main:44800	Athenian courtesan	->	courtesan
+main:44886	Athenian courtesan	->	courtesan
+main:47256	Athenian general	->	general
+main:47615	Athenian actor	->	actor
+main:47712	Athenian painter	->	painter
+main:48131	Athenian courtesan	->	courtesan
+main:48154	Athenian courtesan	->	courtesan
+main:48402	Athenian sculptor	->	sculptor
+main:48403	Athenian sculptor	->	sculptor
+main:48972	Athenian courtesan	->	courtesan
+main:49193	Athenian courtesan	->	courtesan
+main:49502	Athenian courtesan	->	courtesan
+main:5020	Athenian geographer	->	geographer
+main:50376	Athenian courtesan	->	courtesan
+main:51400	Athenian courtesan	->	courtesan
+main:51638	Athenian courtesan	->	courtesan
+main:5231	Athenian courtesan	->	courtesan
+main:5725	Athenian courtesan	->	courtesan
+main:6060	Athenian courtesan	->	courtesan
+main:6162	Athenian painter	->	painter
+main:6286	Athenian courtesan	->	courtesan
+main:6292	Athenian courtesan	->	courtesan
+main:6302	Athenian courtesan	->	courtesan
+main:6311	Athenian courtesan	->	courtesan
+main:6352	Athenian courtesan	->	courtesan
+main:7122	Athenian courtesan	->	courtesan
+main:7124	Athenian courtesan	->	courtesan
+main:7843	Athenian courtesan	->	courtesan
+main:7847	Athenian courtesan	->	courtesan
+main:7998	Athenian courtesan	->	courtesan
+main:8474	Athenian courtesan	->	courtesan
+main:8562	Athenian courtesan	->	courtesan
+main:8579	Athenian courtesan	->	courtesan
+main:8589	Athenian courtesan	->	courtesan
+main:9242	Athenian courtesan	->	courtesan
+name:30412	Greek mythological figure	->	mythological figure

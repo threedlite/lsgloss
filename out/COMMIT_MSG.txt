@@ -1,63 +1,117 @@
-Fix the 2026-09-11 review findings; rebuild data from the checkpoints
+Fix the reader's 2026-09-12 findings; names take the dictionary's own words
+
+Function words, model pass (changelog 20): freqfix.py --function-words
+targets only function-word entries; its judge scores a candidate at the
+article's opening only (the best-window rule accepted quidem "example,
+for instance"; that run was discarded). Top 500 entries: 9 repaired
+(qui, facile, frustra, admodum, paulatim, circiter, em, F, L), 37
+rejected as no better, 82 failed the detectors. `time` import fixed on
+the --screen path. --screen-passes N judges each incumbent N times and
+keeps the lowest score (changelog 21: no further repairs; the judge's
+noise is not one-sided).
+
+Function words, sense-map judge (changelog 22): senses.py builds a map
+of an entry's senses from the XML; freqfix.py --headings shows it to the
+judge and glosser, judges pointer entries against their target, requires
+a candidate to score >= 4 on the map, beat the incumbent there and not
+lose on the opening text, rejects an adjective's words on an adverb
+pointer, logs every decision; --redecide re-verifies a checkpoint. The
+pointer chase (also in package.py) stops at the first substantive entry
+(it ran on through the target's citations: melius -> bellum). 57
+function-word glosses changed: modo "only, merely, but", eo "there, in
+that place", pro "before, in front of", certe "certainly", mox "soon".
+
+Function words (rules, no model; changelog 19):
+- a function-word entry leads its homographs by default (nec -> "not,
+  also not", not the prefix; eo -> the adverb); an excluded function word
+  drops the lemma only if it outvotes the next homograph in the treebank
+  (magis -> the app's data; sero keeps its verb)
+- suspect: word-class sees "inseparable ... particle", "departure from a
+  fixed point", "of place, down", "use of utor", "first letter of the
+  alphabet"; "Graeco-Italic form of wind" is a form-note; a headword
+  echoed in front of a real gloss is stripped ("tamen, nevertheless");
+  gloss_vocabulary ignores inherited glosses
+- package: an adverb entry inheriting a non-adverb's gloss through a
+  cross-reference is excluded (1,236 rows: magis "great", vero "true",
+  celeriter "swift"); a cross-reference's copy of a rejected gloss is
+  rejected (a, "v. ab"); "inf. of utor" is a cross-reference
+
+Package (package.py):
+- the treebank's two-thirds majority lemma leads a form (1,279 forms):
+  se -> sui, not the prefix "sine"; hoc -> hic; ac -> atque; te -> tu;
+  quid -> quis. The bare key leads its numbered homographs. A form whose
+  majority lemma is not in the dictionary ships no row rather than a
+  wrong one (suo was "to stitch", suae "a town in Assyria"), unless the
+  entry is a pointer to that lemma (me, "v. ego"). 179,006 corpus tokens
+  (2.6%) led with a lemma the annotators do not; now none
+- where a proper name and a common word share a lemma, the treebank
+  count (its lemmas carry L&S's homograph numbers) decides the primary
+  sense when decisive against the article winner and a name is one of
+  the two contenders: crassus -> Cicero's Crassus, pontus -> the sea,
+  gallus -> a Gaul (was a river in Phrygia); common-word homographs
+  and `cum` (keyed `Cum2` for the conjunction) keep the article rule.
+  Per-entry corpus frequency was tried as a second signal and dropped
+  (it gave `flamen` "blowing, blast")
+- a form only a minor homograph makes resolves to that homograph's own
+  numbered key: sio -> sion2 "water parsley", not sion "hill of
+  Jerusalem" (10,422 rows); a numbered key carries its own entry's
+  corpus frequency
+- every row under the lemmas que/ve reads "conj enclitic", the bare
+  particles included
+
+Proper names (namegloss.py, new; source `ls`):
+- a capitalised headword takes L&S's italic definition at the head of the
+  first sense, run to the first citation ("a cognomen of several
+  celebrated Romans in the gens Porcia"); grammar notes, headword echoes,
+  quotations and cross-references are skipped, macrons and ligatures
+  folded; the model's gloss is the fallback where the entry has none
+- name_clean(): the entry's text is tidied, not cited -- initials stay, a
+  leading note, an aside ("abbreviated T.", "about 460 B.C.") and a
+  relative clause go
+- names have their own cap, NAME_MAXWORDS = 10 (94% of the definitions
+  fit whole); lsgloss.py and refinalise.py apply it per row; the hard
+  passes and the carry step leave `ls` rows alone; regress.py probes
+  `names`
+- 6,985 rows, 3,142 over five words; Hercules "tenth part" -> "son of
+  Jupiter and Alcmena, husband of Dejanira", Procris "Athenian courtesan"
+  -> "daughter of the Athenian king Erechtheus, wife of Cephalus"
 
 Glosses (rules, no model time; `make rebuild`):
-- enforce: drop "of or" before "belonging/pertaining/relating to" instead of
-  cutting the complement; a gloss may not end on a participle (555 rows)
-- clean: a lower-case final word with a period is prose, not a citation;
-  a count before a word is prose; L&S's name categories render as two
-  English phrasings (Roman family name, Roman surname)
-- cross-references: one resolver in common.py; `v.` inside `adv.`, `v. a.`
-  and one-letter targets are not references (19 rows read "first letter of
-  the Latin alphabet")
-- suspect: editorial-apparatus detector; fragment detector sees cut-off
-  participles; the function-word exemption no longer fires on "Tert. adv."
-  citations (1,616 entries) or derived-adverb notes; y-breve (U+045E) folds
-  to y (1,180 dictionary lines were mis-keyed)
-- grounding flag applied to hard/hard2/named rows too
+- enforce: "of or" is dropped before any "X <preposition>", not only
+  before belonging/pertaining/relating (seven rows shipped "of or made",
+  "of or suited", "of or dwelling"); a trailing parenthetical goes before
+  the cap cuts; a relative clause is a phrase boundary ("king of Mycenae
+  who imposed the labours" -> "king of Mycenae", was "king") and no gloss
+  ends on a relative pronoun; a bare pronoun is contentless
+- strip_unstated_nationality (new, clean_gloss.py): an ethnic adjective at
+  the head of a gloss that the entry never states is dropped --
+  "Athenian sculptor" -> "sculptor" on Timarchides ("a sculptor, Plin.").
+  The prompt's own rule; only glosses written from this entry; Roman and
+  Latin are the dictionary's frame. Applied in lsgloss.py finalise and in
+  refinalise.py (--xml); probed by regress.py (`nationality`)
+- suspect: "of or X" is a fragment whatever X is; one bare function word
+  on an entry with no function-word marker is a fragment ("not", "to");
+  "he, she, it" on a pronoun form is not
+- common: an author citation after "cf." / "v." is not a cross-reference
+  ("cf. Fronto Ter. Als. 4." resolved illatenus to fronto and shipped
+  "broad-forehead person")
 
-Package:
-- flagged (?) and detector-rejected rows are not shipped; a lemma whose
-  primary gloss is rejected is left to the app's own data (--keep-flagged
-  restores the old behaviour)
-- every -que/-ve particle row reads "conj enclitic"; the join runs over
-  hosts from every source, not only paradigms
-- paradigms built once (was twice)
+Evaluation (eval/morphacc.py, tools/quality.py, tools/diffck.py): our
+rows are keyed by the number-stripped lemma, as the gold reader already
+was, and exactness ignores the clitic slot as `compatible` already did.
+Held out: exact 61.5%, contradicted 2.0%, unchanged.
 
-Paradigms (inflect.py):
-- abbreviated genitives joined by where they diverge (filii, hominis,
-  patris, libri, agri); 3rd-declension dative singular; "civis, is" and
-  "mare, is" decline; i-stem endings for i-stems and 3rd-declension
-  adjectives only; 2nd-declension nominatives only where the headword has
-  them; deponents on the right stem with passive-form endings; "deus, dei"
-  is not fifth declension; grammar abbreviations are not genitives
-- held out from the treebanks: exact 58.9% -> 61.5%, contradicted 2.0% ->
-  2.0%, corpus form coverage 73.6% -> 77.4%
+Tests: 284 (2 expected failures); tests/test_fixes.py pins every fix;
+tests/test_package.py checks sion2, the citation, the nationality and
+the particle rows on the shipped zip. Regression baselines accepted
+(changelog 17, 18); make check is green.
 
-Pipeline:
-- common.checkpointed/load_ckpt: a failed call is not checkpointed and is
-  retried next run (was written as "ERROR: ..." / "" / null and skipped
-  forever); judge and shorten/adapt records carry their input gloss
-- common.parse_score reads the digit from the start of the reply
-- lsgloss.py --offline / --carry rebuild the TSV from the checkpoint;
-  adapt is off by default; prompt id covers every prompt; manifest records
-  the XML hash
-- score.py: no newline or tab inside a TSV field; --offline
-- verify.py: reverts the source column with the gloss; judges cross-
-  references against their target
-- lemmatize.py: accepts a suppletive the entry's headword line cites;
-  --offline
-- freqfix.py: a judge failure (-1) is not a low score
-- eval/treebank.py: one treebank reader and one `compatible` for morphacc,
-  quality and diffck
-- Makefile finds data-sources/ beside or inside the checkout; rebuild,
-  lemmas-offline targets; checkpoint.sh has no hard-coded path
-
-Tests: 254 (3 expected failures); tests/test_fixes.py pins every fix;
-package tests read the repo's own out/ first. Regression baseline accepted
-(changelog 15, 16); make check is green.
-
-Data: out/ls_glosses.tsv (1,047 glosses changed, 15 flags), out/lemma_map.tsv,
-out/scores_full.tsv (6 broken lines repaired), out/lewis-short-glosses.zip.
+Data: out/ls_glosses.tsv (8,051 rows changed), out/manifest.json,
+out/lewis-short-glosses.zip (49,861 lemmas, 2,868,876 forms; 5,989
+definitions changed against 09-12).
+Docs: README.md (Revision 2026-09-13), REVIEW.md,
+feedback/RESPONSE_2026-09-13.md; feedback/RESPONSE_2026-09-12.md's row
+count corrected to what 09-12 shipped (49,711).
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_019VsPT17SMj2zp9PUSBXe31
+Claude-Session: https://claude.ai/code/session_01PhLsQeUL1qdHiYmENZsrcZ

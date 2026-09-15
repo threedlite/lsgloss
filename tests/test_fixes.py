@@ -9,8 +9,9 @@ from pathlib import Path
 
 from tests.util import ROOT
 from tests.fakemodel import FakeModel
-from clean_gloss import clean, enforce
-from suspect import reasons, function_entry
+from clean_gloss import clean, enforce, strip_unstated_nationality
+from namegloss import name_gloss, name_clean, is_name_entry, NAME_MAXWORDS
+from suspect import reasons, function_entry, strip_head_echo
 from inflect import forms_with_morph, _noun_stem_and_key, render_morph, parse_reading, SLOT_ORDER
 from common import (parse_score, xref_target_word, XrefIndex, checkpointed, load_ckpt,
                     pos_marker, focus)
@@ -283,6 +284,252 @@ class TestOfflineRebuild(unittest.TestCase):
                                 ['--carry', str(prev)])
             self.assertEqual(rows['vero'][2], 'in truth, certainly')
             self.assertEqual(rows['vero'][3], 'xrefix')
+
+
+
+
+# ---------------------------------------------------------------- 2026-09-13
+# Fixes after the downstream reader's second pass (feedback/RESPONSE_2026-09-13.md).
+
+class TestOfOrStripIsGeneral(unittest.TestCase):
+    """Naming three participles left "of or made", "of or suited", "of or
+    dwelling" shipping on seven rows: the cut is the same whatever follows."""
+
+    CASES = {'of or made of fine linen': 'made of fine linen',
+             'of or proceeding from a command': 'proceeding from a command',
+             'of or dwelling in a village': 'dwelling in a village',
+             # still over the cap without "of or": the cut then lands on a phrase
+             'of or suited to an assembly of the people': 'suited to an assembly',
+             'of or caused by a master or teacher': 'caused by a master',
+             'of or amounting to a scruple (in weight)': 'amounting to a scruple',
+             # the earlier cases are unchanged
+             'of or belonging to a deity': 'belonging to a deity',
+             'of or pertaining to the sea': 'pertaining to the sea'}
+
+    def test_never_ships_of_or_and_one_word(self):
+        for src, want in self.CASES.items():
+            with self.subTest(src):
+                e = enforce(src, 5)
+                self.assertEqual(e, want)
+                self.assertEqual(enforce(e, 5), e)
+
+    def test_the_fragment_detector_sees_any_third_word(self):
+        for g in ('of or made', 'of or suited', 'of or dwelling'):
+            with self.subTest(g):
+                self.assertIn('fragment', reasons('carbaseus', g, 'model~',
+                                                  'carbaseus, a, um, adj. of or made of fine linen'))
+        self.assertNotIn('fragment', reasons('carbaseus', 'made of fine linen', 'model~',
+                                             'carbaseus, a, um, adj. of or made of fine linen'))
+
+
+class TestBareFunctionWordGloss(unittest.TestCase):
+    """`inenarrativus` shipped as "not" and `Iliberi` as "to"."""
+
+    def test_one_function_word_on_an_ordinary_entry_is_a_fragment(self):
+        self.assertIn('fragment', reasons('inenarrativus', 'not', 'hard',
+                                          'in-enarrativus, a, um, adj. 2. inenarro, not adapted for relation'))
+        self.assertIn('fragment', reasons('Iliberi', 'to', 'hard2', 'Iliberi, v. Illiberi.'))
+
+    def test_a_function_word_entry_keeps_its_gloss(self):
+        self.assertNotIn('fragment', reasons('haud', 'not', 'model', 'haud, adv. not, not at all'))
+        self.assertNotIn('fragment', reasons('ex', 'out of, from', 'model', 'ex, praep. with abl. out of, from'))
+
+    def test_a_cross_reference_may_inherit_one(self):
+        self.assertNotIn('fragment', reasons('noenum', 'not', 'xref-resolved', 'noenum and noenu, v. non init.'))
+
+    def test_a_pronoun_form_keeps_its_pronoun_gloss(self):
+        # sos, ibus, im, ea: archaic forms of *is*, glossed "he, she, it"
+        self.assertNotIn('fragment', reasons('sos', 'he, she, it', 'xref-resolved', 'sos, archaic for eos, v. is'))
+        self.assertNotIn('fragment', reasons('sos', 'them', 'model', 'sos, archaic for eos'))
+        # ...but a relative clause cut down to its pronoun is still a fragment
+        self.assertIn('fragment', reasons('praesaltor', 'he who is', 'repaired~', 'praesaltor, oris, m. he who led the Salii'))
+
+
+class TestAuthorCitationIsNotAReference(unittest.TestCase):
+    """"cf. Fronto Ter. Als. 4." cites Fronto; `illatenus` resolved to the entry
+    `fronto` and shipped as "broad-forehead person"."""
+
+    ILLATENUS = ('illatenus or illactenus, adv. illetenus, so far (post-class. and very rare): '
+                 'litteras illatenus, qua dixi, legendas praebebat, App. Mag. p. 326; cf. Fronto Ter. Als. 4.')
+
+    def test_author_followed_by_a_work_is_a_citation(self):
+        self.assertIsNone(xref_target_word(self.ILLATENUS))
+        self.assertIsNone(xref_target_word('x, v. Charis. p. 165 P.'))
+        self.assertIsNone(xref_target_word('y, cf. Plin. 34, 8'))
+
+    def test_a_capitalised_entry_is_still_a_reference(self):
+        self.assertEqual(xref_target_word('Iliberi, v. Illiberi.'), (None, 'Illiberi'))
+        self.assertEqual(xref_target_word('Hispane, adv., after the manner of Spain, v. Hispani, II. A. fin.'),
+                         (None, 'Hispani'))
+        self.assertEqual(xref_target_word('versum (vors-), v. 2. versus.'), ('2', 'versus'))
+        self.assertEqual(xref_target_word('decuriatim, adv. id.; cf. centuriatim, by decuriae, v. Charis. p. 165 P.'),
+                         (None, 'centuriatim'))
+
+
+class TestUnstatedNationality(unittest.TestCase):
+    """The prompt says "never state a nationality the entry does not state";
+    the model wrote "Athenian sculptor" over an entry reading "a sculptor"."""
+
+    def test_drops_an_ethnic_adjective_the_entry_never_mentions(self):
+        self.assertEqual(strip_unstated_nationality('Athenian sculptor', 'Timarchides, is, m., a sculptor, Plin. 34'),
+                         'sculptor')
+        self.assertEqual(strip_unstated_nationality('Athenian rhetorician',
+                                                    'Gorgias, ae, m., a famous Greek sophist of Leontini'),
+                         'rhetorician')
+        self.assertEqual(strip_unstated_nationality('hail! (Persian)', 'chaere, = χαῖρε, hail!'), 'hail!')
+
+    def test_keeps_one_the_entry_states_in_any_spelling(self):
+        for g, e in (('Athenian courtesan', 'Thais, idis, f., a celebrated courtesan of Athens'),
+                     ('Athenian courtesan', 'Procris, a daughter of the Athenian king Erechtheus'),
+                     ('island in the Tyrrhenian Sea', 'Capreae, an island in the Tyrrhene Sea'),
+                     ('Lacedemonian general', 'Cleombrotus, a Lacedaemonian general'),
+                     ('Egyptian Vulcan', 'Phthas, Aegyptiorum Vulcanus'),
+                     ('Spanish style', 'Hispane, after the manner of Spain'),
+                     ('Trojan companion of Aeneas', 'Alcander, a Trojan, Verg.'),
+                     ('Greek sophist', 'Gorgias, ae, m., = Γοργίας, a sophist of Leontini'),
+                     ('Danubian island', 'Peuce, an island in the Danube')):
+            with self.subTest(g):
+                self.assertEqual(strip_unstated_nationality(g, e), g)
+
+    def test_roman_is_the_dictionary_frame(self):
+        self.assertEqual(strip_unstated_nationality('Roman surname', 'Cossus, i, m., a surname in the gens Cornelia'),
+                         'Roman surname')
+
+    def test_never_empties_a_gloss_and_tidies_the_dangle(self):
+        self.assertEqual(strip_unstated_nationality('Athenian', 'Atticus, of Attica'), 'Athenian')
+        # only the head phrase is touched: cutting a later adjective leaves
+        # "island in the Sea"
+        self.assertEqual(strip_unstated_nationality('tunny fish of the Mediterranean', 'colias, a kind of tunny'),
+                         'tunny fish of the Mediterranean')
+        self.assertEqual(strip_unstated_nationality('celebrated Greek general of the Achaean league',
+                                                    'a celebrated general of the Achaeans'),
+                         'celebrated general of the Achaean league')
+        self.assertEqual(strip_unstated_nationality('sculptor', 'x'), 'sculptor')
+
+
+class TestNameGloss(unittest.TestCase):
+    """A proper name takes the entry's own italic definition, not the model's."""
+
+    def test_takes_the_first_italic_of_the_first_sense(self):
+        e = ('<entryFree key="Timarchides"><orth>Tīmarchĭdes</orth>, is, m., <sense n="I">'
+             '<hi rend="ital">a sculptor</hi>, <bibl>Plin. 34, 8</bibl></sense></entryFree>')
+        self.assertEqual(name_gloss(e, 'Tīmarchĭdes'), 'a sculptor')
+        e = ('<entryFree key="Hercules"><orth>Hercŭles</orth>, is, m., <sense n="I">'
+             '<hi rend="ital">son of Jupiter and Alcmena</hi>; <hi rend="ital">the poplar</hi></sense></entryFree>')
+        self.assertEqual(name_gloss(e, 'Hercŭles'), 'son of Jupiter and Alcmena')
+
+    def test_skips_a_headword_echo_and_a_grammar_note(self):
+        e = ('<entryFree key="Abbassus"><sense n="I"><hi rend="ital">Abbassus</hi>, '
+             '<hi rend="ital">a town in Phrygia</hi></sense></entryFree>')
+        self.assertEqual(name_gloss(e, 'Abbassus'), 'a town in Phrygia')
+        e = ('<entryFree key="Abellinum"><sense n="I"><hi rend="ital">Abellinum, a city of the Hirpini</hi></sense></entryFree>')
+        self.assertEqual(name_gloss(e, 'Abellīnum'), 'a city of the Hirpini')
+        e = ('<entryFree key="Ops"><sense n="I"><hi rend="ital">nom. sing.</hi> <hi rend="ital">a personification</hi></sense></entryFree>')
+        self.assertEqual(name_gloss(e, 'Ops'), 'a personification')
+
+    def test_nothing_when_the_entry_has_no_definition_in_italics(self):
+        e = '<entryFree key="Sicilia"><orth>Sĭcĭlĭa</orth>, ae, f., = Σικελία, Sicily, Cic.</entryFree>'
+        self.assertEqual(name_gloss(e, 'Sĭcĭlĭa'), '')
+        e = '<entryFree key="Cotta"><sense n="I"><hi rend="ital">v. Aurelius</hi></sense></entryFree>'
+        self.assertEqual(name_gloss(e, 'Cotta'), '')
+
+    def test_ligatures_are_expanded(self):
+        e = '<entryFree key="Antigone"><sense n="I"><hi rend="ital">a daughter of the Theban king Œdipus</hi></sense></entryFree>'
+        self.assertEqual(name_gloss(e, 'Antĭgŏnē'), 'a daughter of the Theban king Oedipus')
+
+    def test_a_name_is_capitalised_and_a_word_is_not(self):
+        self.assertTrue(is_name_entry('Tīmarchĭdes')); self.assertTrue(is_name_entry('-Que2'))
+        self.assertFalse(is_name_entry('stella')); self.assertFalse(is_name_entry('ăb'))
+        self.assertFalse(is_name_entry('L'))       # the letter, not a name
+
+    def test_names_get_their_own_cap(self):
+        g = 'a daughter of the Athenian king Erechtheus, wife of Cephalus'
+        self.assertEqual(enforce(name_clean(g), NAME_MAXWORDS),
+                         'daughter of the Athenian king Erechtheus, wife of Cephalus')
+        self.assertGreater(NAME_MAXWORDS, 5)
+
+    def test_the_name_cleaner_keeps_initials_and_drops_clauses(self):
+        # the general cleaner read "Q." as a citation and left "of"
+        self.assertEqual(name_clean('of Q. Lutatius Catulus'), 'of Q. Lutatius Catulus')
+        self.assertEqual(name_clean('adj., of or belonging to M. Pescennius Niger, the rival of Septimius Severus'),
+                         'of or belonging to M. Pescennius Niger')
+        self.assertEqual(name_clean('the Hyades, a group of seven stars in the head of Taurus', headword='Hўădes'),
+                         'group of seven stars in the head of Taurus')
+        self.assertEqual(name_clean('a Roman praenomen, abbreviated T.'), 'Roman praenomen')
+        self.assertEqual(name_clean('a celebrated philosopher of Samos, about 550 B.C.'), 'celebrated philosopher of Samos')
+        self.assertEqual(name_clean('a famous heretic of the fifth century A. D.'), 'famous heretic of the fifth century')
+        self.assertEqual(name_clean('a Roman emperor, reigned between 69 and 79 A. D.'), 'Roman emperor')
+        self.assertEqual(name_clean('tutelar deities, Lares, belonging orig. to the Etruscan religion'),
+                         'tutelar deities, Lares, belonging to the Etruscan religion')
+        # a relative clause is a sentence about the name, not a gloss of it
+        self.assertEqual(name_clean('A king of the Caeninenses, who, in the war with the Romans, was slain'),
+                         'king of the Caeninenses')
+        self.assertEqual(name_clean('a Roman emperor who reigned A.D. 270-275'), 'Roman emperor')
+        self.assertEqual(name_clean('a Roman cognomen in the gens Tullia'), 'Roman surname in the gens Tullia')
+
+    def test_a_plural_echo_is_skipped_and_a_quotation_ignored(self):
+        e = ('<entryFree key="Amazon"><sense n="I"><hi rend="ital">an Amazon;</hi> and plur., '
+             '<hi rend="ital">Amazons</hi>, <hi rend="ital">warlike women</hi></sense></entryFree>')
+        self.assertEqual(name_gloss(e, 'Ămāzon'), 'warlike women')
+        e = ('<entryFree key="Cyclops"><sense n="I"><hi rend="ital">a Cyclops;</hi> in plur.: <cit><quote>Cyclopes</quote> '
+             '<trans><tr><hi rend="ital">the Cyclopes, a fabulous race</hi></tr></trans></cit></sense></entryFree>')
+        self.assertEqual(name_gloss(e, 'Cyclops'), '')
+        e = '<entryFree key="Enipeus"><sense n="I"><hi rend="ital">a river in Thessaly that flows into the Penēus</hi></sense></entryFree>'
+        self.assertEqual(name_gloss(e, 'Ĕnīpeus'), 'a river in Thessaly that flows into the Peneus')
+
+
+class TestNamesInTheOfflineRebuild(unittest.TestCase):
+    """End to end: a name entry ships the dictionary's words with source `ls`
+    and a longer cap; one with no italic keeps the model's gloss."""
+
+    def test_offline_run(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            ck = [{'i': 0, 'g': 'Athenian sculptor', 'p': 'main'},
+                  {'i': 1, 'g': 'Sicily', 'p': 'main'},
+                  {'i': 2, 'g': 'Athenian courtesan', 'p': 'main'},
+                  {'i': 3, 'g': 'star', 'p': 'main'}]
+            (d / 'c.jsonl').write_text('\n'.join(json.dumps(x) for x in ck) + '\n', encoding='utf-8')
+            proc = subprocess.run([sys.executable, str(ROOT / 'lsgloss.py'), '--xml', str(FIX / 'mini_name.xml'),
+                                   '--out', str(d / 'o.tsv'), '--ckpt', str(d / 'c.jsonl'),
+                                   '--url', 'http://127.0.0.1:9/', '--offline'],
+                                  capture_output=True, text=True, timeout=120)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            rows = {}
+            for line in (d / 'o.tsv').read_text(encoding='utf-8').splitlines():
+                if not line.startswith('#'):
+                    f = line.split('\t'); rows[f[0]] = f
+        self.assertEqual(rows['Timarchides'][2:4], ['sculptor', 'ls'])
+        self.assertEqual(rows['Procris'][2], 'daughter of the Athenian king Erechtheus, wife of Cephalus')
+        self.assertEqual(rows['Procris'][3], 'ls')
+        self.assertEqual(rows['Sicilia'][2:4], ['Sicily', 'model'])
+        self.assertEqual(rows['stella'][2:4], ['star', 'model'])
+
+
+class TestFunctionWordGlosses(unittest.TestCase):
+    """The commonest words in Vergil and Caesar shipped grammar-book frames:
+    `nec` "inseparable negative particle", `ab` "departure from a fixed point",
+    `de` "of place, down", `uti` "use of utor", `animus` "Graeco-Italic form
+    of wind", `tamen` "tamen, nevertheless"."""
+
+    def test_a_frame_is_a_word_class_description(self):
+        self.assertIn('word-class', reasons('nec', 'inseparable negative particle', 'hard', 'nec, an inseparable particle'))
+        self.assertIn('word-class', reasons('ab', 'departure from a fixed point', 'freqfix', 'ab, praep. with abl. from'))
+        self.assertIn('word-class', reasons('de', 'of place, down', 'model', 'de, praep. with abl. from'))
+        self.assertIn('word-class', reasons('uti', 'use of utor', 'model', 'uti, conj. v. ut'))
+        self.assertNotIn('word-class', reasons('ab', 'from, away from', 'model', 'ab, praep. with abl. from'))
+
+    def test_a_provenance_note_is_not_a_gloss(self):
+        self.assertIn('form-note', reasons('animus', 'Graeco‑Italic form of wind', 'repaired', 'animus, i, m. the soul'))
+        self.assertIn('form-note', reasons('geno', 'old form of gigno', 'model', 'geno, old form of gigno'))
+        self.assertNotIn('form-note', reasons('arcuatim', 'form of a bow', 'model', 'arcuatim, adv. in the form of a bow'))
+
+    def test_a_headword_echo_in_front_of_a_gloss_is_stripped(self):
+        self.assertEqual(strip_head_echo('tamen', 'tamen, nevertheless, however, still', {}), 'nevertheless, however, still')
+        # an English cognate other entries use stays: "orator, speaker"
+        self.assertEqual(strip_head_echo('orator', 'orator, speaker', {'orator': 3}), 'orator, speaker')
+        # never empties a gloss
+        self.assertEqual(strip_head_echo('tamen', 'tamen', {}), 'tamen')
 
 
 if __name__ == '__main__':

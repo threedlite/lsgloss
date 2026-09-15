@@ -3,30 +3,30 @@
   "corpus_tokens": 6873450,
   "detector_rows": {
     "adv-inherits-verb": 29,
-    "bare-echo": 53,
+    "bare-echo": 28,
     "editorial-apparatus": 8,
-    "empty": 924,
-    "etymology-leak": 334,
-    "fragment": 23,
-    "head-echo": 58,
-    "latin-chars": 158,
-    "ungrounded": 499,
-    "word-class": 17
+    "empty": 912,
+    "etymology-leak": 289,
+    "form-note": 23,
+    "fragment": 8,
+    "latin-chars": 44,
+    "ungrounded": 460,
+    "word-class": 28
   },
   "detector_tokens": {
     "adv-inherits-verb": 1074,
-    "bare-echo": 1921,
+    "bare-echo": 9481,
     "editorial-apparatus": 284,
-    "empty": 162146,
-    "etymology-leak": 4439,
-    "fragment": 3856,
-    "head-echo": 14265,
-    "latin-chars": 1882,
-    "ungrounded": 57971,
-    "word-class": 36891
+    "empty": 164228,
+    "etymology-leak": 3927,
+    "form-note": 13722,
+    "fragment": 1783,
+    "latin-chars": 335,
+    "ungrounded": 68954,
+    "word-class": 116513
   },
   "form_coverage_pct": 77.406,
   "form_coverage_tokens": 5320444,
-  "glossed_rows": 50719,
+  "glossed_rows": 50731,
   "rows": 51643
 }

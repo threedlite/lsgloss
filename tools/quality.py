@@ -8,7 +8,7 @@ that needs different data.
 from pathlib import Path
 import os, sys, re, csv, io, glob, zipfile, collections
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from inflect import parse_reading
+from inflect import parse_reading, merge_morph
 from eval.treebank import gold_triples, compatible, CATEGORIAL as CAT
 
 ZIP = sys.argv[1]
@@ -17,7 +17,11 @@ TB = os.environ.get('TREEBANK', 'data-sources/treebank_data/v2.0/Latin')
 cells = collections.defaultdict(dict)
 with zipfile.ZipFile(ZIP) as z:
     for r in csv.DictReader(io.TextIOWrapper(z.open('morphology.csv'), encoding='utf-8')):
-        cells[r['word_form']][r['lemma']] = r['morph_info']
+        # the gold lemma is number-stripped; a minor homograph's own forms ship
+        # under its numbered key, so key ours the same way
+        _lem = __import__('re').sub(r'\d+$', '', r['lemma'])
+        _cell = cells[r['word_form']].get(_lem)
+        cells[r['word_form']][_lem] = merge_morph(_cell, r['morph_info']) if _cell else r['morph_info']
 
 gold = gold_triples(TB)
 

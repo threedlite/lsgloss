@@ -17,7 +17,7 @@ run:            ## gloss the whole dictionary (resumable)
 
 rebuild:        ## rebuild the TSV from the checkpoint with the current rules (no model)
 	python3 lsgloss.py --xml $(XML) --ckpt $(CKPT) --offline --carry out/ls_glosses.tsv
-	python3 refinalise.py --tsv out/ls_glosses.tsv   # the carried rows get the same clean+enforce
+	python3 refinalise.py --tsv out/ls_glosses.tsv --xml $(XML)   # the carried rows get the same clean+enforce
 
 test:           ## unit + integration suite (no model, no network, ~25s)
 	python3 -m unittest discover -s tests -t . -v

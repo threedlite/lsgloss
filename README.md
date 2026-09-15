@@ -2,7 +2,9 @@
 
 Generate a short English gloss (1–5 words) for every entry in **Lewis & Short,
 *A Latin Dictionary*** (Clarendon Press, 1879) using a local, open-weight LLM.
-No API keys, no network calls at inference time.
+No API keys, no network calls at inference time. Proper names are the
+exception: they take the dictionary's own definition, up to ten words (see
+*Proper names come from the dictionary itself*).
 
 Output is a TSV of `key / headword / gloss / source`:
 
@@ -12,6 +14,153 @@ oppugnator	oppugnātor	assaulter, attacker, assailant (class.)	model
 stellula	stellŭla	little star, asterisk	model
 tunica	tŭnĭca	tunic	model
 ```
+
+## Revision 2026-09-13
+
+Fixes after the downstream reader's second pass (their notes are appended to
+`REVIEW_2026-09-11.md`; the reply is `feedback/RESPONSE_2026-09-13.md`). Same
+model replies as before; every change is a rule, reproduced by `make rebuild`
++ `make package`. 49,717 dictionary rows (4 removed, 10 added, 169 changed),
+2,865,334 morphology rows.
+
+- **Homographs keep their own forms.** L&S has *sĭon, ii, n.* (water-parsley)
+  and *Sīon, ōnis* (Jerusalem). Every homograph's forms were routed to the bare
+  key, so the neuter's *sio*, *sii*, *sia* sat under `sion` "hill of
+  Jerusalem". A form only a minor homograph makes now resolves to that
+  homograph's own key (`sio` -> `sion2` "water parsley"; 10,422 rows), and a
+  form both make still leads to the primary sense. See *Choosing which
+  homograph a reader sees*.
+- **Glosses.** "of or" is dropped before any "X <preposition>", not only
+  before belonging/pertaining/relating (seven rows shipped "of or made", "of
+  or suited", "of or dwelling"); a relative clause is a phrase boundary for the
+  word cap (`Eurystheus` "king" -> "king of Mycenae") and no gloss ends on
+  "who"/"where"/"that"; a trailing parenthetical goes before the cap cuts. An
+  ethnic adjective at the head of a gloss that the entry never states is
+  dropped -- the prompt's own rule, applied mechanically: `Timarchides`
+  "Athenian sculptor" -> "sculptor" (L&S: "a sculptor"), 52 rows in the TSV,
+  23 of them shipped.
+- **Detectors.** "of or X" is a fragment whatever X is; one bare function word
+  on an entry that is not a function word is a fragment (`inenarrativus`
+  "not", `Iliberi` "to"); "he, she, it" on a pronoun form is not.
+- **Cross-references.** An author citation after "cf." or "v." is not a
+  reference: "cf. Fronto Ter. Als. 4." resolved `illatenus` ("so far") to the
+  entry `fronto` and shipped it as "broad-forehead person".
+- **Package.** Every row under the lemmas `que` and `ve` reads `conj
+  enclitic`, the bare particles included.
+- **Proper names come from the dictionary itself.** A capitalised headword
+  no longer takes the model's gloss. L&S states what a name is in an italic
+  phrase at the head of the first sense, and the XML keeps that markup, so
+  the phrase is taken verbatim, run to the first citation ("a cognomen of
+  several celebrated Romans in the gens Porcia"), with grammar notes,
+  headword echoes and relative clauses left out (`namegloss.py`; source
+  `ls`, 6,985 rows, 13.5% of the TSV). Names have their own cap of ten words
+  (3,142 of them are over five), since "a daughter of the Athenian king
+  Erechtheus, wife of Cephalus" is what a reader needs and cutting it to five
+  is what made "Athenian courtesan" plausible. `Hercules` reads "son of
+  Jupiter and Alcmena, husband of Dejanira" instead of "tenth part";
+  `Marcellus` "Roman family name in the plebeian gens Claudia"; `Cato`
+  "cognomen of several celebrated Romans in the gens Porcia". 192 names whose
+  entry has no italic definition (adjective-names defined by a Greek
+  equation: *Sicilia*, *Graecus*) keep the model's gloss. 5,989 shipped
+  definitions changed; `baseline/changelog/18-*`.
+- **Name homographs follow the annotators.** Where a proper name and a
+  common word share a lemma (`Crassus` beside *crassus*, `Pontus` beside
+  *pontus*), the primary sense was chosen by article length. The treebank
+  lemmas carry L&S's own homograph numbers, so they are a direct count of
+  which sense readers meet, and that count now decides when it is decisive
+  against the article winner (five tokens, and the article winner holds
+  under half of them) and a name is one of the two contenders. `crassus` is
+  Cicero's Crassus, `pontus` the sea, `gallus` in Caesar a Gaul rather than
+  a river in Phrygia. Common-word homographs (`liber`, `sero`, and `cum`,
+  whose conjunction L&S keys with a capital) keep the article rule. The
+  per-entry corpus frequency was tried as a second signal and dropped: it
+  attributes a shared form to one entry, so homographs that decline alike
+  came out arbitrarily. See *Choosing which homograph a reader sees*.
+- **The annotators' majority leads a form.** A headword row is added at
+  confidence 1.0, so an obscure entry that happens to spell a pronoun form
+  outranked the treebank's row for the real word: `se` led with the prefix
+  ("sine, without, aside") over *sui*, `hoc` with the adverb over *hic*, `ac`
+  with "sharp" over *atque*, `te` with the enclitic suffix over *tu* --
+  179,006 corpus tokens, 2.6% of running Latin, on 29 forms. Where the
+  treebanks assign a form to one lemma by a two-thirds majority (five tokens
+  or more), that lemma's row now leads and the bare key leads its numbered
+  homographs (1,279 forms). Where that lemma is not in the dictionary --
+  *suus* was left to the app's own data because its gloss was a word-class
+  description -- the form ships no row rather than a wrong one (`suo` was
+  "to stitch", `suae` "a town in Assyria", `suum` "swine"; 21 rows on 17
+  forms), except for an entry that is itself a cross-reference to the
+  missing lemma (`me`, "v. ego", keeps "I, myself"). After this no form the
+  annotators decide leads with a lemma they do not.
+- **Function words.** The commonest words in Vergil and Caesar shipped
+  grammar-book frames or the wrong homograph: `nec` "inseparable negative
+  particle" (the prefix entry led the conjunction), `ab` "departure from a
+  fixed point", `de` "of place, down", `uti` "use of utor", `animus`
+  "Graeco-Italic form of wind", `tamen` "tamen, nevertheless". Rules, no
+  model: a function-word entry leads its homographs by default (the article
+  rule ranked the pointer entries these usually are last), with the treebank
+  count deciding whether an excluded function word drops the lemma (`magis`,
+  53 tokens to the dish's 2) or hands it on (`sero` keeps its verb); the
+  word-class detector sees "inseparable ... particle", "departure from",
+  "of place", "use of"; a provenance note ("old form of", "Graeco-Italic form
+  of") is `form-note` and does not ship; a headword echoed in front of a real
+  gloss is stripped; an adverb entry that inherits a non-adverb's gloss
+  through a cross-reference (`magis` "great", `vero` "true", `celeriter`
+  "swift"; 1,236 rows) is left out, and so is a cross-reference's copy of a
+  rejected gloss (`a`, "v. ab"). The excluded words go to the app's own data,
+  which has them; coverage of the Gallic War falls from 10.9% to 12.3% of
+  tokens unglossed by this package for that reason. What is left to a model
+  run: `quam` "more ... the more", `ut` "how, in what manner", `vel` "to
+  choose, prefer", `modo` "if only", and `vero` leading with the verb "to
+  speak the truth" once its adverb entry is excluded.
+- **A model pass on the function words** (`baseline/changelog/20-*`).
+  `freqfix.py` gained `--function-words`, which targets only entries whose
+  headword line marks a function word, and its judge now scores a candidate
+  at the article's *opening* only. The old rule, best window anywhere in
+  the article, is what gave `moneo` "punish, chastise", and in the first run
+  here it accepted `quidem` "example, for instance" from 1,600 characters in
+  when the article opens "Indeed"; that run was discarded and re-run. Result
+  on the top 500 function-word entries: 128 judged defective, 9 repaired
+  (`qui` "how? why? by what means?", `facile` "easily", `frustra` "in vain",
+  `admodum` "very much", `paulatim` "gradually", `circiter` "about,
+  roughly"), 37 candidates no better than the incumbent, 82 failed the
+  detectors or came back empty. `ab` could not be repaired: every candidate
+  named the word class, because the focused article does not say "from"
+  until character 3,760. The judge is noisy -- two screenings of the same
+  500 entries disagreed on 15 targets -- so `quam`, `ut`, `se`, `atque`
+  were not targeted at all. Screening twice and keeping the lower score
+  (`--screen-passes 2`, `baseline/changelog/21-*`) did not reach them
+  either: the noise is not one-sided, the set moved from 128 to 120
+  targets, and the same candidates lost again. Server and command are in
+  the changelog.
+- **A sense-map judge for the model pass** (`senses.py`,
+  `baseline/changelog/22-*`). The judge was shown the first 800 characters
+  of the focused article, which for the commonest words is philology.
+  `sense_headings()` builds a map from the XML sense markup -- the headword
+  line, then "I. definition, II. definition ..." from each sense's first
+  italic phrase -- and `freqfix.py --headings` shows it to the judge and to
+  the glosser. Five runs on the top 500 function-word entries, each
+  discarded and re-run as a flaw showed: the map alone was self-fulfilling
+  (the model copies a heading, the judge rates the copy 5: `sine` "without
+  weight, without force"); a bare pointer entry gave the judge nothing
+  (`forte` "strongly"); the pointer chase ran on through the target's own
+  citations (`melius` -> *bellum* "war" -- the same bug in `package.py`,
+  fixed); an adverb pointer took its adjective's words (`sane` "healthy").
+  The rule that stands: a candidate must score at least 4 on the map, beat
+  the incumbent there, not lose on the opening text, not be a verb or an
+  adjective gloss on an adverb pointer; every decision is logged with its
+  scores. 57 glosses changed: `modo` "only, merely, but", `eo` "there, in
+  that place", `pro` "before, in front of", `a` and `abs` "away from, out
+  of", `certe` "certainly", `mox` "soon", `parce` "sparingly", `verum`
+  "actually, really". Three are doubtful and no rule separates them:
+  `tamquam` "as much as", `merito` "to deserve", `fortiter` "more strongly".
+- **Evaluation.** Held out from the treebanks: exact readings 61.5% of gold
+  tokens, contradicted 2.0%, unchanged. `eval/morphacc.py`, `tools/quality.py`
+  and `tools/diffck.py` now key our rows by the number-stripped lemma, as the
+  gold reader already did (a form shipped under `sion2` was scored "lemma not
+  offered"), and exactness ignores the `clitic` slot as `compatible` already
+  did (the treebank splits `-que` into 812 tokens tagged `conj`).
+- Regression baseline accepted (`baseline/changelog/17-*`); `make check` is
+  green (284 tests).
 
 ## Revision 2026-09-12
 
@@ -39,7 +188,8 @@ rule applied uniformly and reproduced by `make rebuild` + `make package`.
 - **Pipeline.** A failed model call is retried on the next run instead of
   being checkpointed as its own error; judge scores are read from the start of
   the reply; the scores TSV can no longer carry a newline inside a field. The
-  regression baseline is accepted and `make check` is green (254 tests).
+  regression baseline is accepted and `make check` is green (254 tests, 269
+  since 2026-09-13).
 
 ## How it works
 
@@ -48,19 +198,20 @@ Each entry is resolved by the cheapest method that works. Measured on the shippe
 
 | source | what it means | rows | share |
 |---|---|---|---|
-| `model` | sent to the LLM | 39,120 | 75.8% |
-| `xref-resolved` | entry is a pure cross-reference (`v. condicio`); the target entry's gloss is inherited | 7,266 | 14.1% |
-| `repaired` | model declined; re-asked with a prompt that forbids declining | 2,560 | 5.0% |
-| `no-gloss` | genuinely nothing to gloss (unresolvable pointer, or an editorial note) | 865 | 1.7% |
-| `hard` / `hard2` | gloss a mechanical detector objected to, sent back through the re-gloss passes | 887 | 1.7% |
-| `named` | proper-name prompt | 405 | 0.8% |
-| `freqfix` | re-glossed in corpus-frequency order (*Fixing the words readers actually meet*) | 339 | 0.7% |
-| `xrefix` | cross-reference re-glossed across a part-of-speech boundary | 138 | 0.3% |
-| `refilled` | row was empty; `xrefix.py` filled it | 63 | 0.1% |
+| `model` | sent to the LLM | 34,128 | 66.1% |
+| `xref-resolved` | entry is a pure cross-reference (`v. condicio`); the target entry's gloss is inherited | 7,261 | 14.1% |
+| `ls` | a proper name: the entry's own italic definition, verbatim (*Proper names come from the dictionary itself*) | 6,985 | 13.5% |
+| `repaired` | model declined; re-asked with a prompt that forbids declining | 1,262 | 2.4% |
+| `no-gloss` | genuinely nothing to gloss (unresolvable pointer, or an editorial note) | 858 | 1.7% |
+| `hard` / `hard2` | gloss a mechanical detector objected to, sent back through the re-gloss passes | 498 | 1.0% |
+| `freqfix` | re-glossed in corpus-frequency order (*Fixing the words readers actually meet*) | 338 | 0.7% |
+| `xrefix` | cross-reference re-glossed across a part-of-speech boundary | 137 | 0.3% |
+| `named` | proper-name prompt (the fallback where the entry has no italic definition) | 124 | 0.2% |
+| `refilled` | row was empty; `xrefix.py` filled it | 52 | 0.1% |
 
 Two suffixes ride on top of the stage name: `~` means `enforce` condensed the
-gloss to fit the 5-word cap (3,778 rows) and `?` means it failed the grounding
-check and is flagged rather than deleted (536 rows). The TSV keeps every row;
+gloss to fit the cap (2,809 rows) and `?` means it failed the grounding
+check and is flagged rather than deleted (495 rows). The TSV keeps every row;
 the package does not ship the flagged ones (*Rows that do not reach the bar*).
 
 There are **no `tr` rows**: reusing the dictionary's own `<tr>` tag needs
@@ -493,10 +644,11 @@ marked, so they can be reviewed and repaired.
 
 The package is what a reader sees, and since 2026-09-12 `package.py` leaves out
 the `!` and `?` rows and every row a mechanical detector calls not-a-gloss: the
-bare etymon (`pietas` -> "pius", 334 rows), the headword echoed back (52), an
+bare etymon (`pietas` -> "pius", 335 rows), the headword echoed back (52), an
 editorial note used as a definition ("false reading in Vitruvius", 8), a
-truncation fragment (23) and a part-of-speech description (16). Where the
-excluded gloss was a lemma's primary sense the whole lemma is left out -- 924 of
+truncation fragment (13: "of or belonging", "of or made", a bare "not" on an
+adjective) and a part-of-speech description (16). Where the
+excluded gloss was a lemma's primary sense the whole lemma is left out -- 921 of
 them -- rather than let a minor homograph move up (`pietas` would otherwise have
 read "Roman surname, a ship"); the app's own Whitaker data supplies those words.
 `--keep-flagged` restores the old behaviour. Detectors that flag a gloss as
@@ -886,6 +1038,28 @@ treatment. Ordering by (not-a-cross-reference, longest article, gloss score) put
 it — `litus2` "lino, a smearing, besmearing" and `litus3` "to daub, besmear,
 anoint", both still present for the dictionary panel.
 
+Where one of the homographs is a proper name the treebank count comes first
+(since 2026-09-13): the annotators' lemmas carry L&S's numbers, `magnus1` 241
+tokens against `Magnus2` 2, and where the count is decisive against the
+article winner and a name is one of the two contenders it overrides the
+article: `Gallus` the Gaul (9 tokens) over the river (0). It is confined
+to name homographs because that is where article length misleads, and because
+the annotators' count is not sense-specific for every word: `cum` is `cum1`
+347 times whether preposition or conjunction. The per-entry corpus frequency
+is not used here; it attributes a form both paradigms make to one of them, and
+`flamen` came out "blowing, blast".
+
+The numbered keys also receive the forms only their own paradigm makes. Until
+2026-09-13 every homograph's forms resolved to the bare key, which is right
+when the paradigms coincide (*Magnus* and *magnus*) and wrong when they do not:
+L&S has *sĭon, ii, n.* (water-parsley, in Pliny) beside *Sīon, ōnis*
+(Jerusalem), and the neuter's *sio*, *sii*, *sia* were filed under `sion` "hill
+of Jerusalem". A form only a minor homograph makes now goes to that homograph's
+key (`sio` -> `sion2`, 10,422 rows in the package); a form both paradigms make
+(`sion` itself) still leads to the primary sense. The numbered key is in
+`dictionary.csv`, so the join holds, and it carries its own entry's corpus
+frequency rather than the primary's.
+
 ## Code layout
 
 `common.py` holds what every stage needs: entry text extraction (`txt`,
@@ -1014,6 +1188,20 @@ finished the corpus after 17 minutes; per-tag patterns do the same file in 0.07s
 
 ## Known limitations
 
+**Function-word glosses the model pass did not reach.** `quam` "more ... the
+more", `ut` "how, in what manner", `vel` "to choose, prefer" are fluent,
+grounded and wrong, and `vero` leads with the verb "to speak the truth"
+because its adverb entry is a cross-reference to *verus*. The
+frequency-ordered pass was run on the function words on 2026-09-13, last with
+a judge shown the entry's sense map (*Revision 2026-09-13*): `modo` was
+repaired, `vel`'s candidates ("will, choose") were no better, and `quam`,
+`ut`, `se`, `ac` the screening judge rated acceptable every time, since at
+the head of the article their glosses are defensible. A stronger judge
+(gemma, the second model listed under *Performance*) is the next thing to
+try; the words are recorded here so nobody takes them for fixed. `tamquam`
+"as much as", `merito` "to deserve" and `fortiter` "more strongly" came out
+of the last run and are doubtful.
+
 **Sense selection on long articles is the model's.** `moneo` ships as "punish,
 chastise", a late and rare sense; the primary one is *remind, advise, warn*. The
 row came from an early `freqfix` run whose judge rated each candidate at
@@ -1023,12 +1211,17 @@ because most are judge-verified improvements, and no rule can tell this one
 apart without a model. A re-run that judges every candidate against the
 article's opening is the fix, and needs model time.
 
-**A name's gloss says what kind of name, not whose.** `Marcellus` reads "Roman
-family name" because that is what the prompt asks for and what L&S itself often
-says. The six phrasings L&S produced (`Roman nomen`, `Roman gens name`, `name of
-a Roman gens`, `Roman cognomen`, ...) are now rendered as two English ones
-(`Roman family name`, `Roman surname`), but saying *which* family needs a
-different prompt and a model run.
+**A name's gloss says what L&S says, and no more.** Since 2026-09-13 a name
+takes the entry's own italic definition, so `Marcellus` reads "Roman family
+name in the plebeian gens Claudia" and `Procris` "daughter of the Athenian
+king Erechtheus, wife of Cephalus" (the model had "Athenian courtesan", the
+prompt's own example copied). Where the entry says only "a Roman surname",
+that is the gloss; which bearer a passage means is for the reader's text, not
+for a dictionary row. A cross-reference still inherits its target's
+definition whatever its own part of speech: `Troia` (the city) points at
+*Tros* and reads "king of Phrygia, after whom Troy was named". The 192 names
+whose entry has no italic definition keep the model's gloss, with the
+nationality rule as their only guard.
 
 **Rows a detector rejects leave their lemma to the app.** 924 lemmas whose only
 gloss was a bare etymon, an echo or a fragment are not in `dictionary.csv`, and

@@ -36,7 +36,9 @@ sys.path.insert(0, str(ROOT))
 from common import txt, plain, letters, load_entries, load_rows
 from inflect import (forms_with_morph, postag_morph, split_enclitic, merge_morph, fold,
                      ENCLITIC_MORPH)
-from suspect import reasons as suspect_reasons, gloss_vocabulary
+from suspect import reasons as suspect_reasons, gloss_vocabulary, function_entry
+from common import focus, pos_marker, XrefIndex
+from namegloss import is_name_entry
 
 p = argparse.ArgumentParser()
 p.add_argument('--xml', required=True)
@@ -84,11 +86,53 @@ if A.scores:
 # rows are left out and the app's own Whitaker data fills the gap. Detectors
 # that flag a gloss as merely imperfect (a diacritic left in, an adverb given
 # its verb's sense, the headword in front of a real gloss) do not exclude it.
-NOT_A_GLOSS = {'etymology-leak', 'bare-echo', 'editorial-apparatus', 'fragment', 'word-class'}
+NOT_A_GLOSS = {'etymology-leak', 'bare-echo', 'editorial-apparatus', 'fragment', 'word-class', 'form-note'}
+# An adverb entry that is a cross-reference inherits its target's gloss whatever
+# the target is: `magis` ("v. magnus") shipped as "great, large, vast", `vero`
+# as "true, real, genuine", `celeriter` as "swift, fleet, quick". An adverb
+# glossed as an adjective or a verb is wrong for a reader, and the app's own
+# data has the adverb; the row is left out.
+FUNC_POS = ('conj', 'praep', 'adv', 'pron', 'interj', 'num')
+def _pos(i):
+    return pos_marker(bodies[i])
+def _head_pos(i):
+    """The part-of-speech marker in the headword line itself: parentheses
+    removed (L&S opens `Cum` with a 120-character note on spelling) and read
+    only from the first 60 characters, so a marker inside a citation further
+    on (`os, ossis ... Varr. ap. Charis.` is not an adverb) does not count."""
+    head = re.sub(r'\([^()]*\)', ' ', bodies[i])
+    return pos_marker(head[:60])
+def _is_function(i, _hop=True):
+    # the entry for the letter `a` reads "indecl." and is not the preposition
+    if _head_pos(i) in FUNC_POS or (function_entry(focus(bodies[i])) and len(letters(rows[i][1])) > 1):
+        return True
+    # a bare pointer to a function word (`uti`, "v. ut init.") is one too; a
+    # prefix note (`sum-`, "in composition, for sub") or a form note
+    # ("sum = eum, v. is") is not a word at all
+    b = bodies[i]
+    return (_hop and i in target_row and len(b) < 60 and '=' not in b
+            and not rows[i][1].rstrip().endswith('-') and _is_function(target_row[i], _hop=False))
+# which entry each pointer entry finally points at, following "v. ego" up to
+# four hops -- but only while the entry reached is itself a pointer: a
+# substantive article cites other entries ("v. bellus" inside *bonus*), and
+# hopping on from there sent *melius* to *bellum*.
+POINTER_MAX = 200
+_xrefs = XrefIndex(rows, bodies)
+target_row = {}
+for _i in range(len(rows)):
+    if len(bodies[_i]) >= POINTER_MAX: continue
+    _j, _seen = _i, {_i}
+    for _ in range(4):
+        _n = _xrefs.target_of(_j)
+        if _n is None or _n in _seen: break
+        _seen.add(_n); _j = _n
+        if len(bodies[_j]) >= POINTER_MAX: break
+    if _j != _i: target_row[_i] = _j
 vocab = gloss_vocabulary(rows)
 by_lemma = collections.defaultdict(list)
 excluded = collections.Counter()
 dropped_lemmas = 0
+bad_row = {}
 for i, r in enumerate(rows):
     g = r[2].strip()
     if not g: continue
@@ -101,13 +145,28 @@ for i, r in enumerate(rows):
         else:
             why = NOT_A_GLOSS & set(suspect_reasons(r[1], g, r[3], bodies[i], vocab))
             if why: bad = 'detector: ' + ','.join(sorted(why))
+            elif (r[3].startswith('xref') and _pos(i) == 'adv' and i in target_row
+                  and _pos(target_row[i]) != 'adv' and not function_entry(focus(bodies[target_row[i]]))):
+                bad = 'adverb inherits a non-adverb'
             # the detectors compare against the headword; the lemma is the key
             # with its number stripped, and a gloss that merely repeats THAT
             # ("Gnidus" for gnidus) is as empty as the headword echoed
             elif letters(g) == letters(re.sub(r'\d+$', '', r[0])):
                 bad = 'echoes the lemma'
     if bad:
-        excluded[bad] += 1
+        bad_row[i] = bad
+# A cross-reference that inherited a gloss the detectors reject is rejected
+# with it: `a` ("prep. = ab, v. ab") carried a copy of *ab*'s gloss.
+for i, j in target_row.items():
+    if (i not in bad_row and bad_row.get(j, '').startswith('detector')
+            and rows[i][3].startswith('xref') and rows[i][2].strip()):
+        bad_row[i] = 'inherits a rejected gloss'
+for bad in bad_row.values():
+    excluded[bad] += 1
+for i, r in enumerate(rows):
+    g = r[2].strip()
+    if not g: continue
+    bad = bad_row.get(i)
     sc = scores.get(r[0])
     if sc is not None and sc < A.min_score: continue
     lem = plain(re.sub(r'\d+$', '', r[0])) or plain(r[1])
@@ -122,9 +181,60 @@ for i, r in enumerate(rows):
     # runs far longer than litus2 "a smearing". Homograph numbering does not
     # track usage -- litus1 is merely a participle.
     elen = len(bodies[i])
-    if lem: by_lemma[lem].append((sc if sc is not None else 3, g, i, hnum, pointer, elen, bad))
+    if lem: by_lemma[lem].append((sc if sc is not None else 3, g, i, hnum, pointer, elen, bad, r[0]))
 for what, n in excluded.most_common():
     print(f"glosses excluded, {what}: {n:,}", file=sys.stderr)
+
+homograph_lemmas = {lem for lem, items in by_lemma.items() if len(items) > 1}
+
+# Every paradigm, built once. lemma_frequencies used to build all 51,643 of them
+# a second time for the frequency weighting, doubling the build.
+paradigms = {}
+for _body, r in zip(bodies, rows):
+    lem = plain(re.sub(r'\d+$', '', r[0])) or plain(r[1])
+    paradigms[r[0]] = forms_with_morph(r[1], _body[:200], pos_text=_body,
+                                       strict_gender=lem not in homograph_lemmas)
+
+# How often each ENTRY's own forms occur in the corpus (per numbered key, so
+# `sero1` and `sero2` are told apart where their paradigms differ).
+_bykey = {}
+if A.freq:
+    from lemmafreq import load_form_counts, lemma_frequencies
+    _counts = load_form_counts(A.freq)
+    _bykey = lemma_frequencies(rows, bodies, _counts, paradigms)
+
+# Perseus treebanks carry human-verified form/lemma pairs. They generalise: "cui"
+# is a form of qui in every text, not only the annotated ones. Their lemmas also
+# carry L&S's own homograph numbers (`magnus1` 241 tokens, `Magnus2` 2), which
+# is a direct count of which sense readers meet. Read once here; the rows are
+# added to the morphology below, after the dictionary keys exist.
+def _numbered(lemma):
+    """`Magnus2` -> `magnus2`: the join key with its homograph number kept."""
+    m = re.match(r'(.*?)(\d*)$', lemma)
+    return plain(m.group(1)) + m.group(2)
+
+tb_counts = collections.defaultdict(collections.Counter)
+tb_tags = collections.defaultdict(collections.Counter)
+tb_entry = collections.Counter()
+n_tb = 0
+if A.treebank:
+    import glob as _glob
+    for fp in _glob.glob(str(Path(A.treebank) / '*.xml')):
+        try:
+            with open(fp, encoding='utf-8', errors='ignore') as fh: raw = fh.read()
+        except Exception: continue
+        for w in re.findall(r'<word\b[^>]*/?>', raw):
+            fm = re.search(r'\bform="([^"]*)"', w); lm = re.search(r'\blemma="([^"]*)"', w)
+            if not (fm and lm and fm.group(1) and lm.group(1)): continue
+            form, lemma = plain(fm.group(1)), plain(re.sub(r'\d+$', '', lm.group(1)))
+            tb_counts[form][lemma] += 1
+            tb_entry[_numbered(lm.group(1))] += 1
+            # the annotators' own parse of this token: the morphology is in the
+            # source and only had to be read off it
+            pt = re.search(r'\bpostag="([^"]*)"', w)
+            if pt and pt.group(1).strip('-'): tb_tags[(form, lemma)][pt.group(1)] += 1
+            n_tb += 1
+    print(f"treebank pairs read: {n_tb:,}", file=sys.stderr)
 
 # Homographs. L&S has four unrelated `sero` entries and sixteen `in`; keying on
 # the bare headword silently drops all but one (2,164 entries for this corpus).
@@ -133,30 +243,95 @@ for what, n in excluded.most_common():
 # the others are retained as lemma2, lemma3 ... so nothing is lost from the
 # dictionary panel.
 definitions = {}
+# row index -> the key its gloss ships under (`sion` or `sion2`), and the row
+# whose entry is the primary sense of each bare lemma
+dictkey, primary_row = {}, {}
 homograph_kept = homograph_extra = 0
+decided = collections.Counter()               # which signal chose the primary sense
+TB_MIN_TOKENS, TB_MARGIN = 5, 2               # the annotators' count decides when it is this clear
 for lem, items in by_lemma.items():
-    # L&S orders homographs by prominence: qui1 is the relative pronoun a reader
-    # meets constantly, qui2 the rare adverb. Choosing purely on gloss score put
-    # the adverb first. Order by the dictionary's own numbering, then by score.
-    # substantive senses before pointers, then longest article, then score
-    items.sort(key=lambda t: (t[4], -t[5], -t[0], len(t[1])))
+    # Which sense is the primary. A substantive sense before a pointer, then the
+    # longest article (L&S gives its most-used senses the longest treatment),
+    # then gloss score. Where one of the homographs is a proper name -- `Magnus`
+    # beside *magnus*, `Castor` beside the beaver -- article length is a poor
+    # guide, and the treebank annotators' count decides first when it is
+    # decisive: their lemmas carry L&S's own numbers (`magnus1` 241 tokens,
+    # `Magnus2` 2). The per-entry corpus frequency was tried as a second signal
+    # and dropped: it attributes a shared form to one entry, so homographs that
+    # decline alike came out arbitrarily (`flamen` "blowing, blast", `spongia`
+    # "proper name"). Common-word homographs keep the article rule, by
+    # decision, 2026-09-13.
+    # L&S keys the conjunction `Cum2` with a capital; a capitalised headword
+    # whose entry carries a function-word marker is not a name
+    def _is_name(i):
+        return (is_name_entry(rows[i][1]) and not function_entry(focus(bodies[i]))
+                and pos_marker(bodies[i]) not in ('conj', 'praep', 'adv', 'pron', 'interj', 'num'))
+    # A function word leads its homographs by default: the adverb `vero` over
+    # the verb "to speak the truth", the conjunction `nec` over the prefix,
+    # `magis` over the dish. A reader meets the function word thousands of
+    # times and the content word seldom, and the article rule ranked the
+    # pointer entries these usually are last. Where the function-word entry
+    # is then excluded (an adverb inheriting an adjective), the lemma goes
+    # to the app's own data rather than to the content word.
+    for t in items:
+        if _is_function(t[2]) and not _is_name(t[2]):
+            items[items.index(t)] = t[:4] + (-1,) + t[5:]      # ahead of substantives and pointers
+    named = any(_is_name(t[2]) for t in items)
+    decisive = named and len(items) > 1
+    if decisive:
+        # ...and only where a name is one of the two contenders: a name against
+        # a common word (`Crassus` / *crassus*) or a name against a name
+        # (`Gallus` the Gaul against the river, `Teucer` the Trojan ancestor
+        # against the son of Telamon). A vote between two common words stays
+        # with the article rule even when a name homograph exists elsewhere in
+        # the group.
+        by_tb = max(items, key=lambda t: (-t[4], tb_entry.get(_numbered(t[7]), 0), t[5]))
+        by_art = max(items, key=lambda t: (-t[4], t[5], t[0]))
+        lead, held = tb_entry.get(_numbered(by_tb[7]), 0), tb_entry.get(_numbered(by_art[7]), 0)
+        # decisive against the article winner: enough tokens, and the article
+        # winner has under half of them (`Gallus` the Gaul 9 tokens, the river 0;
+        # the surname's 7 do not matter)
+        decisive = (by_tb is not by_art and lead >= TB_MIN_TOKENS and held * TB_MARGIN < lead
+                    and (_is_name(by_tb[2]) or _is_name(by_art[2])))
+    if decisive:
+        items.sort(key=lambda t: (t[4], -tb_entry.get(_numbered(t[7]), 0), -t[5], -t[0], len(t[1])))
+    else:
+        items.sort(key=lambda t: (t[4], -t[5], -t[0], len(t[1])))
+    if named and len(items) > 1:
+        a, b = items[0], items[1]
+        if a[4] != b[4]: decided['pointer'] += 1
+        elif decisive and tb_entry.get(_numbered(a[7]), 0) != tb_entry.get(_numbered(b[7]), 0): decided['treebank'] += 1
+        else: decided['article length'] += 1
     # An excluded gloss takes its lemma with it when it is the PRIMARY sense.
     # Dropping only the row let the next homograph move up: with *pietas*
     # ("pius") gone, `pietas` was defined as "Roman surname, a ship" -- the
     # name of the personification -- which is worse for a reader of Cicero
     # than no entry at all. Whitaker's own data supplies the common word. An
     # excluded minor homograph is simply left out.
+    # ...with one refinement: when the excluded primary is a function-word
+    # entry (an adverb that inherited its adjective's gloss), the next
+    # homograph takes over unless the function word is what readers meet --
+    # `sero` keeps its verb (the adverb *sero* has 1 token, the verb 7), while
+    # `magis` (the adverb 53, the dish 2) goes to the app's own data.
+    while items[0][6] and _is_function(items[0][2]) and not _is_name(items[0][2]):
+        rest = [t for t in items[1:] if not t[6]]
+        if not rest or tb_entry.get(_numbered(items[0][7]), 0) > tb_entry.get(_numbered(rest[0][7]), 0):
+            break
+        items = items[1:]
     if items[0][6]:
         dropped_lemmas += 1
         continue
     items = [t for t in items if not t[6]]
     definitions[lem] = (items[0][1], items[0][0])
+    dictkey[items[0][2]] = lem; primary_row[lem] = items[0][2]
     homograph_kept += 1
-    for n, (sc, g, _i, _h, _p, _l, _b) in enumerate(items[1:], start=2):
+    for n, (sc, g, _i, *_rest) in enumerate(items[1:], start=2):
         definitions[f"{lem}{n}"] = (g, sc)
+        dictkey[_i] = f"{lem}{n}"
         homograph_extra += 1
-homograph_lemmas = {lem for lem, items in by_lemma.items() if len(items) > 1}
 print(f"lemmas left to the app's own dictionary (primary gloss excluded): {dropped_lemmas:,}",
+      file=sys.stderr)
+print("primary sense of a name homograph decided by: " + ", ".join(f"{k} {v:,}" for k, v in decided.most_common()),
       file=sys.stderr)
 print(f"lemmas: {homograph_kept:,} primary + {homograph_extra:,} homograph senses retained",
       file=sys.stderr)
@@ -167,25 +342,17 @@ print(f"lemmas: {homograph_kept:,} primary + {homograph_extra:,} homograph sense
 # the same inflected form -- "cui" from both qui and Spaco, "mari" from mare and
 # Marus -- the obscure one should lose. Without this, a rare word's paradigm can
 # capture a form that belongs to one of the commonest words in the language.
-# Every paradigm, built once. lemma_frequencies used to build all 51,643 of them
-# a second time for the frequency weighting, doubling the build.
-paradigms = {}
-for _body, r in zip(bodies, rows):
-    lem = plain(re.sub(r'\d+$', '', r[0])) or plain(r[1])
-    paradigms[r[0]] = forms_with_morph(r[1], _body[:200], pos_text=_body,
-                                       strict_gender=lem not in homograph_lemmas)
-
 lemma_freq = {}
 if A.freq:
-    from lemmafreq import load_form_counts, lemma_frequencies
-    _counts = load_form_counts(A.freq)
-    _bykey = lemma_frequencies(rows, bodies, _counts, paradigms)
-    for _r in rows:
+    for _i, _r in enumerate(rows):
         _lem = plain(re.sub(r'\d+$', '', _r[0])) or plain(_r[1])
         # lemma_frequencies is keyed per entry; the max below is what
         # turns that back into a per-lemma figure for the dictionary key
         _v = _bykey.get(_r[0], 0)
         if _v: lemma_freq[_lem] = max(lemma_freq.get(_lem, 0), _v)
+        # a numbered key is one entry, and gets that entry's own figure
+        _k = dictkey.get(_i)
+        if _v and _k and _k != _lem: lemma_freq[_k] = _v
     print(f"lemma frequencies loaded for {sum(1 for v in lemma_freq.values() if v):,} lemmas",
           file=sys.stderr)
 
@@ -226,6 +393,10 @@ def add(form, lemma, conf, morph, origin, weighted=True):
     form = fold(form.lstrip('-'))
     if not form or not lemma or lemma not in definitions: return
     if len(form) < 2 or len(form) > 40: return
+    # The particle is an enclitic whatever produced the row: the treebank tags
+    # the bare `que` and `ue` "conj", and those three rows were the only ones
+    # under the lemma that did not carry the marker.
+    if lemma in ENCLITIC_LEMMA.values(): morph = ENCLITIC_MORPH
     # Treebank pairs already record which lemma this FORM actually is, counted in
     # real text, so lemma frequency must not override them: `os` is the commoner
     # word overall, but `oris` is annotated as *ora* three times to *os* once.
@@ -253,6 +424,16 @@ for i, (e, r) in enumerate(zip(ents, rows)):
     # other, so the gender filter is switched off for those lemmas (see the
     # `strict_gender` argument where `paradigms` is built).
     paradigm = paradigms[r[0]]
+    # A form only a minor homograph makes resolves to that homograph's key.
+    # L&S has sĭon, ii, n. (water-parsley) and Sīon, ōnis (Jerusalem); the
+    # neuter's *sii*, *sio*, *sia* were filed under the primary `sion` and a
+    # reader of Pliny was told water-parsley is a hill of Jerusalem. The
+    # numbered keys are in dictionary.csv, so the join holds. A form both
+    # paradigms make (`sion` itself) still leads to the primary sense.
+    key = dictkey.get(i, lem)
+    own = None
+    if key != lem:
+        own = {f for f in paradigm if f not in paradigms[rows[primary_row[lem]][0]]}
     # The headword's own spellings. Take the label from the paradigm where a slot
     # produces the same string -- `porta` is the nominative singular and saying so
     # is more use than repeating that it is the headword.
@@ -267,30 +448,15 @@ for i, (e, r) in enumerate(zip(ents, rows)):
         # form from an obscure paradigm ("cui" from Spaco) beats nothing and wins
         # by default. Only trust short forms when they ARE the headword.
         conf = 0.85 if len(f) >= 5 else 0.35
-        add(f, lem, conf, minfo, 'generated paradigm')
+        if own is not None and f in own:
+            add(f, key, conf, minfo, 'generated paradigm (minor homograph)')
+        else:
+            add(f, lem, conf, minfo, 'generated paradigm')
 
 # Perseus treebanks carry human-verified form/lemma pairs. They generalise: "cui"
 # is a form of qui in every text, not only the annotated ones. Highest confidence,
 # so they override generated paradigms and model guesses alike.
 if A.treebank:
-    import glob as _glob
-    n_tb = 0
-    tb_counts = collections.defaultdict(collections.Counter)
-    tb_tags = collections.defaultdict(collections.Counter)
-    for fp in _glob.glob(str(Path(A.treebank) / '*.xml')):
-        try:
-            with open(fp, encoding='utf-8', errors='ignore') as fh: raw = fh.read()
-        except Exception: continue
-        for w in re.findall(r'<word\b[^>]*/?>', raw):
-            fm = re.search(r'\bform="([^"]*)"', w); lm = re.search(r'\blemma="([^"]*)"', w)
-            if not (fm and lm and fm.group(1) and lm.group(1)): continue
-            form, lemma = plain(fm.group(1)), plain(re.sub(r'\d+$', '', lm.group(1)))
-            tb_counts[form][lemma] += 1
-            # the annotators' own parse of this token: the morphology is in the
-            # source and only had to be read off it
-            pt = re.search(r'\bpostag="([^"]*)"', w)
-            if pt and pt.group(1).strip('-'): tb_tags[(form, lemma)][pt.group(1)] += 1
-            n_tb += 1
     # rank the candidates for each form by how often the treebanks chose each one
     for form, cnt in tb_counts.items():
         total = sum(cnt.values())
@@ -303,7 +469,6 @@ if A.treebank:
             tag = max(tags.items(), key=lambda kv: (kv[1], kv[0]))[0] if tags else ''
             add(form, lemma, 0.90 + 0.09 * (k / total), postag_morph(tag), 'treebank',
                 weighted=False)
-    print(f"treebank pairs read: {n_tb:,}", file=sys.stderr)
 
 try:
     with open(A.lemma_map, encoding='utf-8') as fh:
@@ -319,6 +484,57 @@ try:
                 add(plain(f[0]), plain(re.sub(r'\d+$', '', f[2])), 0.5, '', 'model lemma')
 except FileNotFoundError:
     print("note: no lemma map found, skipping irregular forms", file=sys.stderr)
+
+# ---------------------------------------------------------------- the annotators' majority leads
+# A headword row is added at confidence 1.0, so an obscure entry that happens
+# to spell a pronoun form outranked the treebank's row for the real word: `se`
+# led with the prefix ("sine, without, aside") over *sui*, `hoc` with the
+# adverb over *hic*, `ac` with "sharp" over *atque*, `te` with the enclitic
+# suffix over *tu* -- 179,006 corpus tokens, 2.6% of running Latin, on 29
+# forms. Two rules, both from the annotators' count for the form:
+#
+# 1. Where they assign a form to one lemma by a two-thirds majority (at least
+#    TB_MIN_TOKENS tokens), that lemma's row leads and every other candidate
+#    ranks below it.
+# 2. Where that lemma is not in the dictionary -- *suus* was left to the app's
+#    own data because its gloss was a word-class description -- the form ships
+#    NO row rather than a wrong one: `suo` was "to stitch", `suae` "a town in
+#    Assyria", `suum` "swine". The one exception is an entry that is itself a
+#    cross-reference to the missing lemma (`me`, "v. ego"), whose gloss is the
+#    right word's.
+tb_major = {}
+for _form, _cnt in tb_counts.items():
+    _total = sum(_cnt.values())
+    if _total < TB_MIN_TOKENS: continue
+    _lemma, _k = _cnt.most_common(1)[0]
+    if 3 * _k >= 2 * _total: tb_major[_form] = _lemma
+# which bare lemma each entry points at (`target_row`, above). Every entry is
+# read, not only the rows glossed by resolution: `mecum` ("cum me, v. ego")
+# carries a model gloss and is a pointer all the same.
+pointer_target = collections.defaultdict(set)
+for _i, _j in target_row.items():
+    pointer_target[plain(re.sub(r'\d+$', '', rows[_i][0])) or plain(rows[_i][1])].add(
+        plain(re.sub(r'\d+$', '', rows[_j][0])) or plain(rows[_j][1]))
+n_lead = n_noform = n_dropped = 0
+for _form, _maj in tb_major.items():
+    if _form not in forms: continue
+    _bare = {lem: re.sub(r'\d+$', '', lem) for lem in forms[_form]}
+    if _maj in _bare.values():
+        # the bare key is the primary sense and leads; a numbered key of the
+        # same word (`alius2` "Elian", `populus2` "poplar") ranks just below it
+        for lem, (conf, morph, origin) in list(forms[_form].items()):
+            forms[_form][lem] = ((1.0, morph, origin) if lem == _maj
+                                 else (0.99, morph, origin) if _bare[lem] == _maj
+                                 else (min(conf, 0.89), morph, origin))
+        n_lead += 1
+    else:
+        for lem in list(forms[_form]):
+            if _maj not in pointer_target.get(_bare[lem], ()):
+                del forms[_form][lem]; n_dropped += 1
+        if not forms[_form]:
+            del forms[_form]; n_noform += 1
+print(f"annotators' majority: leads on {n_lead:,} forms; {n_dropped:,} rows dropped on {n_noform:,} forms "
+      f"whose lemma is not in the dictionary", file=sys.stderr)
 
 # -que and -ve attach to the inflected form: virum -> virumque. The enclitic
 # does not change the host's case or tense, so the host's reading carries over

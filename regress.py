@@ -22,7 +22,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 from common import txt, load_entries, load_rows, fold, plain, letters, focus
-from clean_gloss import clean, enforce
+from clean_gloss import clean, enforce, strip_unstated_nationality
+from namegloss import name_gloss, name_clean, is_name_entry, NAME_MAXWORDS
 from ground import score as ground_score
 from suspect import reasons, gloss_vocabulary
 from inflect import forms_for, _noun_stem_and_key, HEAD
@@ -68,6 +69,34 @@ def probe_enforce(ctx):
         e = enforce(g)
         if e != g:
             out[k] = f"{g}\t->\t{e}"
+    return out
+
+
+def probe_nationality(ctx):
+    """strip_unstated_nationality() over RAW model output, for the same reason
+    as probe_clean: the finished TSV has already had it applied."""
+    out = {}
+    for k, raw in ctx['raw'].items():
+        i = int(k.rsplit(':', 1)[1])
+        if i >= len(ctx['bodies']):
+            continue
+        g = clean(raw)
+        n = strip_unstated_nationality(g, ctx['bodies'][i])
+        if n != g:
+            out[k] = f"{g}\t->\t{n}"
+    return out
+
+
+def probe_names(ctx):
+    """name_gloss() over every capitalised entry: the italic definition each
+    takes, after clean and the name cap, or nothing."""
+    out = {}
+    for e, r in zip(ctx['ents'], ctx['rows']):
+        if not is_name_entry(r[1]):
+            continue
+        g = name_gloss(e, r[1])
+        if g:
+            out[r[0]] = enforce(name_clean(g, NAME_MAXWORDS, r[1]), NAME_MAXWORDS)
     return out
 
 
@@ -125,6 +154,8 @@ def probe_norm(ctx):
 PROBES = {
     'clean':     probe_clean,
     'enforce':   probe_enforce,
+    'nationality': probe_nationality,
+    'names':     probe_names,
     'suspect':   probe_suspect,
     'xref':      probe_xref,
     'stem':      probe_stem,
@@ -292,6 +323,7 @@ def main():
         sys.exit(f"row/entry mismatch: {len(rows)} rows vs {len(ents)} entries -- "
                  "the TSV is positional, so this invalidates every probe")
     ctx = {'rows': rows,
+           'ents': ents,
            'bodies': [txt(e) for e in ents],
            'keys': [r[0] for r in rows],
            'form_counts': load_form_counts(a.freq),

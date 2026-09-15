@@ -11,7 +11,8 @@ from common import letters as _norm, focus as _focus
 from ground import score as ground_score
 
 POSDESC = re.compile(r'^\s*(a |an |the )?'
-                     r'(enclitic |demonstrative |interrogative |relative |personal |copulative |negative |indefinite )*'
+                     r'(enclitic |demonstrative |interrogative |relative |personal |copulative |negative |indefinite |'
+                     r'inseparable |strengthening |intensive |emphatic |disjunctive |causal |temporal |conditional )*'
                      r'(preposition|particle|conjunction|pronoun|adverb|interjection|prefix|suffix|numeral)\b', re.I)
 LATIN   = re.compile(r'[āēīōūăĕĭŏŭȳǣœæ]|[Ͱ-Ͽ]')       # macrons/breves/Greek left in the gloss
 DECL    = re.compile(r'^(ae|i|is|us|um|a|onis|ei|n|m|f|entis|atis|inis)$', re.I)
@@ -20,8 +21,11 @@ ADVERBY = re.compile(r'(e|iter|ter)$')
 NEVER_ALONE = {'of','in','on','at','one','that','this','is','be','it','as','so','who','which','the','a','an'}
 FUNC = {'of','to','in','on','at','by','for','with','from','and','or','the','a','an','that','this',
         'is','be','it','as','not','so','if','one','who','which','into','out','up','down','off','over',
+        # "he who has been a decurion" cut at the relative clause is "he"
+        'he','she','they','those','these',
         # a participle waiting for its complement: "of or belonging" says nothing
         'belonging','pertaining','relating'}
+PRONOUN = {'he','she','they','it','those','these','this','that','one'}
 # a gloss can never END on these
 CUT_OFF = {'belonging', 'pertaining', 'relating', 'the', 'a', 'an'}
 
@@ -79,7 +83,23 @@ POSWORD = re.compile(r'\b(?:preposition|particle|conjunction|pronoun|interjectio
                      r'prefix|suffix|numeral|introducer)\b', re.I)
 FRAME   = re.compile(r'^(?:denot\w*|indicat\w*|introduc\w*|ask\w*|stands? for|'
                      r'equivalent to|used\b)'
-                     r'|^to\s+(?:introduce|express|denote|indicate|emphasi[sz]e)\b', re.I)
+                     r'|^to\s+(?:introduce|express|denote|indicate|emphasi[sz]e)\b'
+                     # "departure from a fixed point" (ab), "of place, down" (de),
+                     # "use of utor" (uti): the grammarian's frame, not the word
+                     r'|^(?:departure|motion|movement|separation|direction|position|relation)\b'
+                     r'|^of (?:place|time|space|manner|degree|cause|number|source)\b'
+                     r'|^(?:use|sense|meaning|signification) of\b', re.I)
+# "Graeco-Italic form of wind" (animus), "old form of agito": a note on where
+# the word comes from, not what it means. "form of a bow" (arcuatim) is a gloss.
+# "first letter of Latin alphabet" (a), "eighth letter" (mi): a letter, not a word
+LETTER = re.compile(r'^(?:the )?(?:(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|'
+                    r'eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|'
+                    r'nineteenth|twentieth|twenty-\w+|\d+(?:st|nd|rd|th)) letter\b'
+                    r'|(?:\w+ )?letter of (?:the )?(?:latin |roman |greek )?alphabet\b)', re.I)
+FORM_NOTE = re.compile(r'^(?:an? |the )?(?:old|older|archaic|ancient|earlier|later|former|collateral|shortened|'
+                       r'lengthened|contracted|childish|vulgar|access|primitive|original|secondary|obsolete|'
+                       r'poetic|fuller|dialectic|Graeco-Italic|Oscan|Umbrian|Greek|Doric|Aeolic|Latin|'
+                       r'rare|another|second|weakened|strengthened|softened|abbreviated|variant|by-)\s*form of\b', re.I)
 # the entry's OWN part-of-speech marker, in the headword line only. FUNCTION_ENTRY
 # scans 300 characters and matches an "adv." anywhere, which is far too loose here.
 OWNPOS  = re.compile(r'^[^,]{0,40}(?:,[^,]{0,30}){0,3}?,\s*(?:[a-z]\.\s*)?'
@@ -112,6 +132,10 @@ def gloss_vocabulary(rows):
     for r in rows:
         if len(r) < 3:
             continue
+        # a cross-reference copies another entry's gloss: `attamen` reading
+        # "tamen, nevertheless" is not a second entry reaching for "tamen"
+        if len(r) > 3 and r[3].startswith('xref'):
+            continue
         h = _norm(r[1])
         for w in {_norm(x) for x in re.split(r'[\s,;]+', r[2]) if x.strip()}:
             if w and w != h:
@@ -138,7 +162,8 @@ def reasons(headword, gloss, source, entry_text, gloss_vocab=None):
     if (src in ('model', 'repaired', 'named') and not is_function
             and ground_score(g, entry_text) == 0.0):
         out.append('ungrounded')
-    if POSDESC.match(g): out.append('word-class')
+    if POSDESC.match(g) or LETTER.match(g): out.append('word-class')
+    if FORM_NOTE.match(g.replace('‑', '-')): out.append('form-note')
     elif OWNPOS.match(focused[:120]) and (POSWORD.search(g) or FRAME.match(g)):
         out.append('word-class')
     if LATIN.search(g):  out.append('latin-chars')
@@ -149,9 +174,21 @@ def reasons(headword, gloss, source, entry_text, gloss_vocab=None):
         out.append('bare-echo')
     words = [w.lower().strip(',;.:') for w in g.split()]
     if words and all(w in FUNC for w in words) and not is_function:
-        # "one who is", "that which is" -- a truncation fragment, not a gloss
-        if len(words) > 1: out.append('fragment')
+        # "one who is", "that which is" -- a truncation fragment, not a gloss;
+        # "he, she, it" is the whole gloss of a pronoun form (*sos*, *ibus*)
+        if len(words) > 1 and not all(w in PRONOUN for w in words): out.append('fragment')
         elif words[0] in NEVER_ALONE: out.append('fragment')
+        # "not" on its own glosses *non* and nothing else. An entry whose
+        # headword line carries no function-word marker, glossed as one bare
+        # function word, was cut off: "not adapted for relation" -> "not",
+        # `Iliberi` -> "to". A cross-reference may legitimately inherit one
+        # from a function word (`noenum` -> "not", from *non*), and a bare
+        # pronoun is the whole gloss of a pronoun form ("them" on *sos*).
+        elif src != 'xref-resolved' and words[0] not in PRONOUN: out.append('fragment')
+    elif len(words) == 3 and words[:2] == ['of', 'or']:
+        # "of or made", "of or suited": the cut that made "of or belonging",
+        # whatever the third word is
+        out.append('fragment')
     elif len(words) > 1 and words[-1] in CUT_OFF:
         # "of or belonging" is cut off before its complement whatever the
         # entry is; a numeral adjective ("trecenarius, adj. num.") is exempt
@@ -177,3 +214,16 @@ def reasons(headword, gloss, source, entry_text, gloss_vocab=None):
     if src == 'xref-resolved' and ADVERBY.search(headword.rstrip('.')) and re.match(r'^to\s', g):
         out.append('adv-inherits-verb')
     return out
+
+
+def strip_head_echo(headword, gloss, gloss_vocab):
+    """"tamen, nevertheless, however" -> "nevertheless, however": the Latin
+    headword echoed in front of its own gloss, judged as `head-echo` is
+    (a word no other entry uses in English is Latin), is removed. A rule, not
+    a hand edit; the rest of the gloss must be there to keep."""
+    parts = [p.strip() for p in re.split(r'[;,]', gloss) if p.strip()]
+    h = _norm(headword)
+    if (len(parts) > 1 and h and not headword.lstrip('-^')[:1].isupper()
+            and _norm(parts[0]) == h and gloss_vocab.get(h, 0) < 1):
+        return ', '.join(parts[1:])
+    return gloss

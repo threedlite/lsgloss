@@ -28,9 +28,10 @@ sys.path.insert(0, str(ROOT))
 from common import (txt, focus, chat, load_entries, XrefIndex, load_ckpt,
                     checkpointed, pos_marker)
 from eval.xref import is_xref
-from clean_gloss import clean, enforce
+from clean_gloss import clean, enforce, strip_unstated_nationality
+from namegloss import name_gloss, name_clean, is_name_entry, NAME_MAXWORDS, SOURCE as LS
 from ground import score as ground_score
-from suspect import reasons as suspect_reasons, gloss_vocabulary, is_bare_echo
+from suspect import reasons as suspect_reasons, gloss_vocabulary, is_bare_echo, strip_head_echo
 
 p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 p.add_argument('--xml', required=True, help='path to lat.ls.perseus-eng2.xml (Perseus lexica repo)')
@@ -102,6 +103,9 @@ for i, e in enumerate(ents):
     else:
         rows.append([key, orth, '', 'model'])
 xrefs = XrefIndex(rows, bodies)
+# A name is not held to the five-word cap (see namegloss.py)
+def cap_of(r):
+    return NAME_MAXWORDS if is_name_entry(r[1]) else A.maxwords
 
 Path(A.out).parent.mkdir(parents=True, exist_ok=True)
 Path(A.ckpt).parent.mkdir(parents=True, exist_ok=True)
@@ -194,7 +198,7 @@ def shorten(text):
                  maxwords=A.maxwords)
 
 long_idx = [i for i, r in enumerate(rows)
-            if r[3] in ('model', 'repaired') and len(clean(r[2], A.maxwords).split()) > A.maxwords]
+            if r[3] in ('model', 'repaired') and len(clean(r[2], cap_of(r)).split()) > cap_of(r)]
 if long_idx:
     inputs = {i: rows[i][2] for i in long_idx}
     done = cached('shorten', long_idx, inputs)
@@ -222,6 +226,16 @@ if echo_idx:
         if g and g.strip().upper() != 'NONE' and not is_bare_echo(rows[i][1], g):
             rows[i][2] = g; rows[i][3] = 'named'
 
+# ---------------------------------------------------------------- 2c. proper names: the entry's own words
+# L&S states what a name is in an italic phrase at the head of the first sense;
+# a capitalised headword takes it verbatim and the model's gloss is the fallback.
+n_ls = 0
+for i, r in enumerate(rows):
+    if r[3] == 'xref' or not is_name_entry(r[1]): continue
+    g = name_gloss(ents[i], r[1])
+    if g: r[2] = g; r[3] = LS; n_ls += 1
+log(f"[names] {n_ls:,} entries take the dictionary's own definition")
+
 # ---------------------------------------------------------------- 2d. re-gloss suspects
 # Screen every gloss with cheap mechanical detectors and re-ask for the ones that
 # look wrong, this time with reasoning enabled -- worth the cost on a few percent.
@@ -232,6 +246,7 @@ def hard_pass(tag, prefix, finalised=False):
     vocab = gloss_vocabulary(rows)
     idx, why = [], {}
     for i, r in enumerate(rows):
+        if r[3] == LS: continue                   # the dictionary's own words are not re-asked
         w = suspect_reasons(r[1], r[2], r[3], bodies[i], vocab)
         if w: idx.append(i); why[i] = w
     if not idx:
@@ -243,7 +258,7 @@ def hard_pass(tag, prefix, finalised=False):
     try:
         for i, g in run_pass(idx, HARD, tag, prefix).items():
             if finalised:
-                g = enforce(clean(g, A.maxwords), A.maxwords)
+                g = enforce(clean(g, cap_of(rows[i])), cap_of(rows[i]))
             if g and g.strip().upper() != 'NONE' and not suspect_reasons(rows[i][1], g, 'model', bodies[i], vocab):
                 rows[i][2] = g; rows[i][3] = prefix
     finally:
@@ -329,10 +344,16 @@ for i, r in enumerate(rows):
 def finalise():
     """clean + hard word cap; returns (cleaned, trimmed) counts."""
     c_n = t_n = 0
-    for r in rows:
-        c = clean(r[2], A.maxwords)
+    vocab = gloss_vocabulary(rows)               # tells a Latin echo from an English cognate
+    for i, r in enumerate(rows):
+        cap = cap_of(r)
+        if r[3].rstrip('~?!') == LS:
+            c = name_clean(r[2], cap, r[1])       # the entry's own words: tidied, not cited
+        else:
+            c = strip_unstated_nationality(clean(r[2], cap), bodies[i], r[3])
+            c = strip_head_echo(r[1], c, vocab)   # "tamen, nevertheless" -> "nevertheless"
         if c != r[2]: c_n += 1
-        e = enforce(c, A.maxwords)
+        e = enforce(c, cap)
         if e != c:
             t_n += 1
             if not r[3].endswith('~'): r[3] += '~'
@@ -358,6 +379,7 @@ if A.carry:
     prev = {r[0]: r for r in load_rows(A.carry)}
     for r in rows:
         q = prev.get(r[0])
+        if r[3].rstrip('~') == LS: continue      # the entry's own words beat a carried repair
         if q and q[3].rstrip('~?!') in CARRY_SOURCES and q[2].strip():
             if r[2] != q[2] or r[3] != q[3]:
                 r[2], r[3] = q[2], q[3]; carried += 1

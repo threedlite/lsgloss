@@ -173,8 +173,7 @@ class TestPackageInvariants(unittest.TestCase):
         no host row does. This is what the downstream reader asked for."""
         from inflect import ENCLITIC_MORPH
         bad = [r for r in self.morphology[:400000]
-               if (r['lemma'] in ('que', 've')) != (r['morph_info'] == ENCLITIC_MORPH)
-               and r['word_form'] not in ('que', 'ue', 've')]
+               if (r['lemma'] in ('que', 've')) != (r['morph_info'] == ENCLITIC_MORPH)]
         self.assertEqual(bad[:5], [], f'{len(bad)} rows mismarked')
 
     def test_a_treebank_host_gets_its_enclitic_form(self):
@@ -193,11 +192,98 @@ class TestPackageInvariants(unittest.TestCase):
     def test_no_flagged_or_editorial_gloss_ships(self):
         # "false reading in Vitruvius" is apparatus; the bare "of or belonging"
         # is a gloss cut off before its complement. Both shipped on 2026-09-11.
+        import re
         bad = [r['lemma'] for r in self.dictionary
                if r['definition'].lower().startswith('false reading')
-               or r['definition'].lower() in ('of or belonging', 'of or pertaining',
-                                              'of or relating')]
+               or re.match(r'^of or \\w+$', r['definition'].lower())]
         self.assertEqual(bad[:5], [], f'{len(bad)} apparatus or truncated glosses shipped')
+
+    def test_a_minor_homograph_keeps_its_own_forms(self):
+        """L&S has sĭon, ii, n. (water-parsley) and Sīon, ōnis (Jerusalem). The
+        neuter's own forms (*sio*, *sii*) were filed under the primary `sion`
+        and a reader of Pliny was told water-parsley is a hill of Jerusalem."""
+        if 'sion2' not in self.lemmas:
+            self.skipTest('sion2 absent')
+        sio = {r['lemma'] for r in self.morphology if r['word_form'] == 'sio'}
+        self.assertIn('sion2', sio); self.assertNotIn('sion', sio)
+        # a form both paradigms make still leads to the primary sense
+        self.assertIn('sion', {r['lemma'] for r in self.morphology if r['word_form'] == 'sion'})
+
+    def test_an_author_citation_is_not_resolved_as_a_reference(self):
+        # `illatenus` ("so far") read "cf. Fronto Ter. Als. 4." as a pointer to
+        # the entry `fronto` and shipped as "broad-forehead person"
+        for lem in ('illatenus', 'illactenus'):
+            for r in self.dictionary:
+                if r['lemma'] == lem:
+                    self.assertNotIn('forehead', r['definition'])
+
+    def test_a_name_homograph_follows_the_annotators(self):
+        """Where a name and a common word share a lemma, the treebank count
+        decides the primary sense when it is decisive; article length otherwise.
+        The rule is confined to name homographs: `cum` stays the conjunction
+        although the annotators' lemma count favours the preposition."""
+        d = {r['lemma']: r['definition'] for r in self.dictionary}
+        if 'crassus' in d:
+            self.assertIn('gens Licinia', d['crassus'])         # Cicero's Crassus, 11 tokens to 0
+        if 'pontus' in d:
+            self.assertIn('sea', d['pontus'])                   # the common noun, 11 to 0
+        if 'cum' in d:
+            self.assertTrue(d['cum'].startswith('when'))
+        if 'magnus' in d:
+            self.assertIn('great', d['magnus'])
+        if 'castor' in d:
+            self.assertIn('Tyndarus', d['castor'])              # not decisive: the article rule
+
+    def test_the_annotators_majority_leads_a_form(self):
+        """`se` led with the prefix ("sine, without"), `hoc` with the adverb,
+        `ac` with "sharp": a headword row at 1.0 outranked the treebank's row
+        for the real word. The annotators' two-thirds majority now leads."""
+        lead = {}
+        for r in self.morphology:
+            w = r['word_form']
+            if w in ('se', 'hoc', 'ac', 'te', 'quid', 'alia', 'populi', 'suo', 'suae', 'me'):
+                c = float(r['confidence'])
+                if w not in lead or c > lead[w][0]: lead[w] = (c, r['lemma'])
+        for form, want in (('se', 'sui'), ('hoc', 'hic'), ('ac', 'atque'), ('te', 'tu'), ('quid', 'quis'),
+                           ('alia', 'alius'), ('populi', 'populus')):
+            if form in lead:
+                self.assertEqual(lead[form][1], want, f'{form} leads with {lead[form][1]}')
+        # a form whose majority lemma is not in the dictionary (*suus*, left to
+        # the app's own data) ships no row rather than "to stitch" / "a town in Assyria"
+        self.assertNotIn('suo', lead); self.assertNotIn('suae', lead)
+        # ...unless the entry is itself a pointer to that lemma: `me`, "v. ego"
+        self.assertIn('me', lead)
+
+    def test_function_words_lead_their_homographs_or_go_to_the_app(self):
+        """`nec` led with the prefix ("inseparable negative particle"), `vero`
+        with the verb "to speak the truth", `magis` with the dish. The function
+        word leads; where its gloss is an adjective's inherited through a
+        cross-reference, the lemma goes to the app's own data instead."""
+        d = {r['lemma']: r['definition'] for r in self.dictionary}
+        if 'nec' in d:
+            self.assertTrue(d['nec'].startswith('not'), d['nec'])
+        for lem in ('magis', 'celeriter', 'ab', 'animus'):
+            self.assertNotIn(lem, d, f'{lem} ships a frame or an inherited adjective: {d.get(lem)!r}')
+        # `a` the preposition: *ab* is rejected, its copy under `a` with it, and
+        # the form leads nowhere rather than to the letter or the interjection
+        self.assertEqual([r['lemma'] for r in self.morphology if r['word_form'] == 'a'], [])
+        for lem, word in (('sum', 'be'), ('sero', 'sow')):
+            if lem in d:
+                self.assertIn(word, d[lem], f'{lem}: {d[lem]!r}')
+        if 'eo' in d:                                     # the adverb leads, not the verb "to go"
+            self.assertNotIn('go', d['eo'].split(', ')[0].split())
+        if 'os' in d:                                     # os1 the mouth leads, not os2 the bone
+            self.assertNotIn('bone', d['os'])
+        if 'vero' in d:                                   # the adverb's row is excluded; the verb leads
+            self.assertNotIn('true', d['vero'])
+        if 'tamen' in d:
+            self.assertTrue(d['tamen'].startswith('nevertheless'), d['tamen'])
+
+    def test_no_nationality_the_entry_never_states(self):
+        # Timarchides is "a sculptor" in L&S; the model made him Athenian
+        d = {r['lemma']: r['definition'] for r in self.dictionary}
+        if 'timarchides' in d:
+            self.assertEqual(d['timarchides'], 'sculptor')
 
     def test_no_enclitic_row_without_its_host(self):
         """If the half in front of -que is not indexed, the joined form is not a
